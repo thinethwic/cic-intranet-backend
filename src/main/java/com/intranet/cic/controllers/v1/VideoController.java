@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(path = "/api/v1/users")
+@RequestMapping(path = "/api/v1/videos")
 @RequiredArgsConstructor
 @Slf4j
-public class UserController {
+public class VideoController {
 }
