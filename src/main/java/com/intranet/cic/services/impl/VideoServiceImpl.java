@@ -1,0 +1,105 @@
+package com.intranet.cic.services.impl;
+
+import com.intranet.cic.dtos.VideoDTO;
+import com.intranet.cic.entities.Announcement;
+import com.intranet.cic.entities.Video;
+import com.intranet.cic.execeptions.IntranetException;
+import com.intranet.cic.repositories.VideoRepository;
+import com.intranet.cic.services.VideoService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class VideoServiceImpl implements VideoService {
+
+    private final VideoRepository videoRepository;
+    private final ModelMapper modelMapper;
+
+    @Override
+    public List<Video> getAllVideos() {
+        try{
+            return videoRepository.findAll();
+        } catch (Exception exception){
+            log.error("Failed to get all video", exception);
+            throw new IntranetException("Failed to get all video", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public Video getVideoById(Long id) {
+        try{
+            return videoRepository.findById(id)
+                    .orElseThrow(() -> new IntranetException("Video Not found", HttpStatus.NOT_FOUND)
+                    );
+        } catch (IntranetException intranetException) {
+
+            log.warn("Video not found with id: {} to fetch", id, intranetException);
+            throw new IntranetException("Mentor Not found", HttpStatus.NOT_FOUND);
+        } catch (Exception exception) {
+            log.error("Error getting video", exception);
+            throw new IntranetException("Failed to get video", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public Video createVideo(VideoDTO videoDTO) {
+        try{
+            Video video = modelMapper.map(videoDTO, Video.class);
+            return videoRepository.save(video);
+        } catch (Exception exception){
+            log.error("Failed to create video", exception);
+            throw new IntranetException("Failed to create video", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public Video updateVideo(Long id, VideoDTO videoDTO) {
+        try{
+            Video video = videoRepository.findById(id)
+                    .orElseThrow(() -> new IntranetException("Video Not found", HttpStatus.NOT_FOUND)
+                    );
+
+            modelMapper.map(videoDTO, Video.class);
+
+            return videoRepository.save(video);
+        }  catch (IntranetException intranetException) {
+
+            log.warn("Video not found with id: {} to fetch", id, intranetException);
+            throw new IntranetException("Video Not found", HttpStatus.NOT_FOUND);
+
+        } catch (Exception exception) {
+
+            log.error("Error updating video", exception);
+            throw new IntranetException("Failed to update video", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public void deleteVideo(Long id) {
+        try{
+
+            Video video = videoRepository.findById(id)
+                    .orElseThrow(() -> new IntranetException("Video Not found", HttpStatus.NOT_FOUND)
+                    );
+
+            videoRepository.delete(video);
+
+        } catch (IntranetException intranetException) {
+
+            log.warn("Video not found with id: {} to fetch", id, intranetException);
+            throw new IntranetException("Video Not found", HttpStatus.NOT_FOUND);
+
+        } catch (Exception exception) {
+
+            log.error("Error deleting video", exception);
+            throw new IntranetException("Failed to delete video", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+}
