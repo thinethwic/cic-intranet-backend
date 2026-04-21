@@ -1,6 +1,7 @@
 package com.intranet.cic.controllers;
 
 import com.intranet.cic.dtos.ErrorResponse;
+import com.intranet.cic.execeptions.IntranetException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,19 +49,19 @@ public class AbstractController {
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-//    //    Handles Custom SkillMentor Exceptions
-//    @ExceptionHandler(SkillMentorException.class)
-//    public ResponseEntity<ErrorResponse> handleSkillMentorException(
-//            SkillMentorException ex) {
-//
-//        ErrorResponse errorResponse = ErrorResponse.builder()
-//                .message(ex.getMessage())
-//                .errorCode(ex.getStatus().toString())
-//                .timestamp(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
-//                .build();
-//
-//        return new ResponseEntity<>(errorResponse, ex.getStatus());
-//    }
+    //    Handles Custom SkillMentor Exceptions
+    @ExceptionHandler(IntranetException.class)
+    public ResponseEntity<ErrorResponse> handleSkillMentorException(
+            IntranetException ex) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .message(ex.getMessage())
+                .errorCode(ex.getStatus().toString())
+                .timestamp(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
+                .build();
+
+        return new ResponseEntity<>(errorResponse, ex.getStatus());
+    }
 
     // Validation Exception
     @ExceptionHandler(MethodArgumentNotValidException.class)
