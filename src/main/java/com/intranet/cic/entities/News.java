@@ -37,7 +37,7 @@ public class News {
     @Column(name = "category", nullable = false)
     private Segment category;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 

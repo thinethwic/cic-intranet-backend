@@ -1,9 +1,10 @@
 package com.intranet.cic.services.impl;
 
 import com.intranet.cic.dtos.VideoDTO;
-import com.intranet.cic.entities.Announcement;
+import com.intranet.cic.entities.User;
 import com.intranet.cic.entities.Video;
 import com.intranet.cic.execeptions.IntranetException;
+import com.intranet.cic.repositories.UserRepository;
 import com.intranet.cic.repositories.VideoRepository;
 import com.intranet.cic.services.VideoService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 public class VideoServiceImpl implements VideoService {
 
     private final VideoRepository videoRepository;
+    private final UserRepository userRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -51,7 +53,12 @@ public class VideoServiceImpl implements VideoService {
     @Override
     public Video createVideo(VideoDTO videoDTO) {
         try{
+            User user = userRepository.findById(videoDTO.getUserId())
+                    .orElseThrow(() -> new IntranetException("User not found", HttpStatus.NOT_FOUND));
+
             Video video = modelMapper.map(videoDTO, Video.class);
+            video.setUser(user);
+
             return videoRepository.save(video);
         } catch (Exception exception){
             log.error("Failed to create video", exception);
@@ -66,7 +73,14 @@ public class VideoServiceImpl implements VideoService {
                     .orElseThrow(() -> new IntranetException("Video Not found", HttpStatus.NOT_FOUND)
                     );
 
+            if (videoDTO.getUserId() != null) {
+                User user = userRepository.findById(videoDTO.getUserId())
+                        .orElseThrow(() -> new IntranetException("User not found", HttpStatus.NOT_FOUND));
+                video.setUser(user);
+            }
+
             modelMapper.map(videoDTO, Video.class);
+            video.setUser(video.getUser());
 
             return videoRepository.save(video);
         }  catch (IntranetException intranetException) {

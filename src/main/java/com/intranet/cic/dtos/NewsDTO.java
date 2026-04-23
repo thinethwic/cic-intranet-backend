@@ -9,8 +9,6 @@ import lombok.Data;
 @Data
 public class NewsDTO {
 
-    private Long id;                        // null on create, required on update
-
     @NotBlank(message = "Title is required")
     @Size(min = 2, max = 200, message = "Title must be between 2 and 200 characters")
     private String title;

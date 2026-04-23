@@ -2,8 +2,10 @@ package com.intranet.cic.services.impl;
 
 import com.intranet.cic.dtos.AnnouncementDTO;
 import com.intranet.cic.entities.Announcement;
+import com.intranet.cic.entities.User;
 import com.intranet.cic.execeptions.IntranetException;
 import com.intranet.cic.repositories.AnnouncementRepository;
+import com.intranet.cic.repositories.UserRepository;
 import com.intranet.cic.services.AnnouncementService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,7 @@ import java.util.List;
 public class AnnouncementServiceImpl implements AnnouncementService {
 
     private final AnnouncementRepository announcementRepository;
+    private final UserRepository userRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -50,8 +53,13 @@ public class AnnouncementServiceImpl implements AnnouncementService {
 
     @Override
     public Announcement createAnnouncement(AnnouncementDTO announcementDTO) {
-        try{
+        try {
+            User user = userRepository.findById(announcementDTO.getUserId())
+                    .orElseThrow(() -> new IntranetException("User Not found", HttpStatus.NOT_FOUND));
+
             Announcement announcement = modelMapper.map(announcementDTO, Announcement.class);
+            announcement.setUser(user);
+
             if (announcement.getIsRead() == null) {
                 announcement.setIsRead(false);
             }
@@ -64,26 +72,28 @@ public class AnnouncementServiceImpl implements AnnouncementService {
 
     @Override
     public Announcement updateAnnouncement(Long id, AnnouncementDTO announcementDTO) {
-        try{
+        try {
             Announcement announcement = announcementRepository.findById(id)
-                    .orElseThrow(() -> new IntranetException("Announcement Not found", HttpStatus.NOT_FOUND)
-                    );
+                    .orElseThrow(() -> new IntranetException("Announcement Not found", HttpStatus.NOT_FOUND));
 
-            modelMapper.map(announcementDTO, Announcement.class);
+            User user = userRepository.findById(announcementDTO.getUserId())
+                    .orElseThrow(() -> new IntranetException("User Not found", HttpStatus.NOT_FOUND));
+
+            modelMapper.map(announcementDTO, announcement);
+            announcement.setUser(user);
 
             if (announcement.getIsRead() == null) {
                 announcement.setIsRead(false);
             }
+
             return announcementRepository.save(announcement);
-        }  catch (IntranetException intranetException) {
 
-            log.warn("Announcement not found with id: {} to fetch", id, intranetException);
-            throw new IntranetException("Announcement Not found", HttpStatus.NOT_FOUND);
-
+        } catch (IntranetException intranetException) {
+            log.warn("Not found during announcement update - id: {}", id, intranetException);
+            throw intranetException;
         } catch (Exception exception) {
-
-            log.error("Error updating Announcement", exception);
-            throw new IntranetException("Failed to update Announcement", HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error updating announcement", exception);
+            throw new IntranetException("Failed to update announcement", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

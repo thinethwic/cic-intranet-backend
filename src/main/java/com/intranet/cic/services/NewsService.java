@@ -5,9 +5,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface NewsService {
-    Page<News> getAllUsers(Pageable pageable);
-    News getUserById(Long id);
-    News createUser(NewsDTO newsDTO);
-    News updateUser(Long id, NewsDTO newsDTO);
-    void deleteUser(Long id);
+    Page<News> getAllNews(Pageable pageable);
+    News getNewsById(Long id);
+    News createNews(NewsDTO newsDTO);
+    News updateNews(Long id, NewsDTO newsDTO);
+    void deleteNews(Long id);
 }

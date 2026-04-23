@@ -8,10 +8,12 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @AllArgsConstructor
@@ -56,20 +58,20 @@ public class Document {
     private Boolean allowDownload = false;
 
 //    // M side of "Create" relationship — many Documents created by one User
-//    @ToString.Exclude
-//    @ManyToOne
-//    @JoinColumn(name = "created_by", nullable = false)
-//    private User createdBy;
-//
-//    // M side of right relationship — many Documents belong to many Members (if needed)
-//
-//    @ManyToMany
-//    @JoinTable(
-//         name = "document_members",
-//         joinColumns = @JoinColumn(name = "document_id"),
-//         inverseJoinColumns = @JoinColumn(name = "member_id")
-//     )
-//     private List<Member> members;
+    @ToString.Exclude
+    @ManyToOne
+    @JoinColumn(name = "created_by", nullable = false)
+    private User createdBy;
+
+    // M side of right relationship — many Documents belong to many Members (if needed)
+
+    @ManyToMany
+    @JoinTable(
+         name = "document_members",
+         joinColumns = @JoinColumn(name = "document_id"),
+         inverseJoinColumns = @JoinColumn(name = "member_id")
+     )
+     private List<Member> members;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

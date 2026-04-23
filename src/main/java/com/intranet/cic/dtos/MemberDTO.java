@@ -39,4 +39,6 @@ public class MemberDTO {
             message = "Phone number must be between 7 and 15 digits, optionally starting with +"
     )
     private String phoneNo;
+
+    private Long userId;
 }

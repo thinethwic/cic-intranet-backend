@@ -1,5 +1,6 @@
 package com.intranet.cic.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.intranet.cic.entities.types.MemberRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -43,6 +44,11 @@ public class Member {
 
     @Column(name = "phone_no")
     private String phoneNo;
+
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = true)
+    @JsonIgnoreProperties({"member", "password", "news", "documents"})
+    private User user;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

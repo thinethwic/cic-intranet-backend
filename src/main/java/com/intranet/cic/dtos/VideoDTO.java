@@ -1,6 +1,7 @@
 package com.intranet.cic.dtos;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -22,4 +23,7 @@ public class VideoDTO {
             message = "Video link must be a valid URL starting with http:// or https://"
     )
     private String videoLink;
+
+    @NotNull(message = "User ID is required")
+    private Long userId;
 }

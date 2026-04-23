@@ -35,4 +35,7 @@ public class EventDTO {
 
     @NotNull(message = "Segment is required")
     private Segment segment;
+
+    @NotNull(message = "User ID is required")
+    private Long userId;
 }

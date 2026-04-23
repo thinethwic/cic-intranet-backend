@@ -42,6 +42,10 @@ public class Event {
     @Column(name = "segment", nullable = false)
     private Segment segment;    // reuse your existing segment enum
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

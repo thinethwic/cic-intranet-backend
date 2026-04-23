@@ -2,7 +2,6 @@ package com.intranet.cic.services.impl;
 
 import com.intranet.cic.dtos.UpdateUserDTO;
 import com.intranet.cic.dtos.UserDTO;
-import com.intranet.cic.entities.Document;
 import com.intranet.cic.entities.User;
 import com.intranet.cic.execeptions.IntranetException;
 import com.intranet.cic.repositories.UserRepository;
@@ -26,9 +25,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Page<User> getAllUsers(Pageable pageable) {
-        try{
+        try {
             return userRepository.findAll(pageable);
-        } catch (Exception exception){
+        } catch (Exception exception) {
             log.error("Failed to get all users", exception);
             throw new IntranetException("Failed to get all users", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -36,14 +35,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(Long id) {
-        try{
+        try {
             return userRepository.findById(id)
-                    .orElseThrow(()-> new IntranetException("User Not found", HttpStatus.NOT_FOUND)
-                    );
+                    .orElseThrow(() -> new IntranetException("User not found", HttpStatus.NOT_FOUND));
         } catch (IntranetException intranetException) {
-
             log.warn("User not found with id: {} to fetch", id, intranetException);
-            throw new IntranetException("User Not found", HttpStatus.NOT_FOUND);
+            throw intranetException;                          // ✅ re-throw original
         } catch (Exception exception) {
             log.error("Error getting user", exception);
             throw new IntranetException("Failed to get user", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -53,12 +50,23 @@ public class UserServiceImpl implements UserService {
     @Override
     public User createUser(UserDTO userDTO) {
         try {
+            if (userRepository.existsByUsername(userDTO.getUsername())) {
+                throw new IntranetException("Username already exists", HttpStatus.CONFLICT);
+            }
+            if (userRepository.existsByEmail(userDTO.getEmail())) {
+                throw new IntranetException("Email already exists", HttpStatus.CONFLICT);
+            }
+
             User user = modelMapper.map(userDTO, User.class);
             user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+
             return userRepository.save(user);
+        } catch (IntranetException intranetException) {
+            log.warn("Conflict while creating user: {}", intranetException.getMessage());
+            throw intranetException;
         } catch (Exception exception) {
-            log.error("Failed to create User", exception);
-            throw new IntranetException("Failed to create User", HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Failed to create user", exception);
+            throw new IntranetException("Failed to create user", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -66,7 +74,7 @@ public class UserServiceImpl implements UserService {
     public User updateUser(Long id, UpdateUserDTO userDTO) {
         try {
             User user = userRepository.findById(id)
-                    .orElseThrow(() -> new IntranetException("User Not found", HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new IntranetException("User not found", HttpStatus.NOT_FOUND));
 
             modelMapper.map(userDTO, user);
 
@@ -77,31 +85,26 @@ public class UserServiceImpl implements UserService {
             return userRepository.save(user);
         } catch (IntranetException intranetException) {
             log.warn("User not found with id: {} to update", id, intranetException);
-            throw intranetException;
+            throw intranetException;                          // ✅ re-throw original
         } catch (Exception exception) {
-            log.error("Error updating User", exception);
-            throw new IntranetException("Failed to update User", HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error updating user", exception);
+            throw new IntranetException("Failed to update user", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
     public void deleteUser(Long id) {
-        try{
+        try {
             User user = userRepository.findById(id)
-                    .orElseThrow(()-> new IntranetException("User Not found", HttpStatus.NOT_FOUND)
-                    );
-
+                    .orElseThrow(() -> new IntranetException("User not found", HttpStatus.NOT_FOUND));
 
             userRepository.delete(user);
-        }  catch (IntranetException intranetException) {
-
-            log.warn("User not found with id: {} to fetch", id, intranetException);
-            throw new IntranetException("User Not found", HttpStatus.NOT_FOUND);
-
+        } catch (IntranetException intranetException) {
+            log.warn("User not found with id: {} to delete", id, intranetException);
+            throw intranetException;                          // ✅ re-throw original
         } catch (Exception exception) {
-
-            log.error("Error updating User", exception);
-            throw new IntranetException("Failed to update User", HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error deleting user", exception);
+            throw new IntranetException("Failed to delete user", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

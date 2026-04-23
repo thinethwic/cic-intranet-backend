@@ -23,4 +23,7 @@ public class AnnouncementDTO {
     private Segment segment;
 
     private Boolean isRead = false;
+
+    @NotNull(message = "User ID is required")
+    private Long userId;
 }
