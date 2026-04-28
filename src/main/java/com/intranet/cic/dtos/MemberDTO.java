@@ -40,5 +40,7 @@ public class MemberDTO {
     )
     private String phoneNo;
 
+    private LocalDate joinedDate;
+
     private Long userId;
 }

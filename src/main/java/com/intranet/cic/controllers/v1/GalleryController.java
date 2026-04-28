@@ -3,6 +3,7 @@ package com.intranet.cic.controllers.v1;
 import com.intranet.cic.controllers.AbstractController;
 import com.intranet.cic.dtos.GalleryDTO;
 import com.intranet.cic.entities.Gallery;
+import com.intranet.cic.services.FileStorageService;
 import com.intranet.cic.services.GalleryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping(path = "/api/v1/images")
@@ -20,13 +23,13 @@ import org.springframework.web.bind.annotation.*;
 public class GalleryController extends AbstractController {
 
     private final GalleryService galleryService;
+    private final FileStorageService fileStorageService;
 
     @GetMapping
     public ResponseEntity<Page<Gallery>> getAllImages(
             @PageableDefault(size = 10, sort = "id") Pageable pageable
     ) {
-        Page<Gallery> images = galleryService.getAllImages(pageable);
-        return sendOkResponse(images);
+        return sendOkResponse(galleryService.getAllImages(pageable));
     }
 
     @GetMapping("/{id}")
@@ -34,25 +37,38 @@ public class GalleryController extends AbstractController {
         return sendOkResponse(galleryService.getImageById(id));
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Gallery> createImage(
-            @Valid @RequestBody GalleryDTO galleryDTO
+            @RequestPart("data") @Valid GalleryDTO galleryDTO,
+            @RequestPart("image") MultipartFile image
     ) {
-        Gallery gallery = galleryService.createImage(galleryDTO);
-        return sendCreatedResponse(gallery);
+        String imageUrl = fileStorageService.storeImage(image);
+        galleryDTO.setImage(imageUrl);
+        return sendCreatedResponse(galleryService.createImage(galleryDTO));
     }
 
-    @PutMapping("/{id}")
+    // ✅ multipart — optional image replacement on update
+    @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Gallery> updateImage(
             @PathVariable Long id,
-            @Valid @RequestBody GalleryDTO galleryDTO
+            @RequestPart("data") @Valid GalleryDTO galleryDTO,
+            @RequestPart(value = "image", required = false) MultipartFile image  // ✅ optional
     ) {
-        Gallery gallery = galleryService.updateImage(id, galleryDTO);
-        return sendOkResponse(gallery);
+        if (image != null && !image.isEmpty()) {
+            // ✅ Delete old image before storing new one
+            Gallery existing = galleryService.getImageById(id);
+            fileStorageService.deleteFile(existing.getImage());
+
+            String imageUrl = fileStorageService.storeImage(image);
+            galleryDTO.setImage(imageUrl);
+        }
+        return sendOkResponse(galleryService.updateImage(id, galleryDTO));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteImage(@PathVariable Long id) {
+        Gallery gallery = galleryService.getImageById(id);
+        fileStorageService.deleteFile(gallery.getImage());
         galleryService.deleteImage(id);
         return sendNoContentResponse();
     }

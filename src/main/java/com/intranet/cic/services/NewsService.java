@@ -9,5 +9,6 @@ public interface NewsService {
     News getNewsById(Long id);
     News createNews(NewsDTO newsDTO);
     News updateNews(Long id, NewsDTO newsDTO);
+    News updateNewsImage(Long id, String imageUrl); // ✅ add this, remove duplicate
     void deleteNews(Long id);
 }

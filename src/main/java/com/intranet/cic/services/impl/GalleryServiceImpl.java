@@ -67,25 +67,24 @@ public class GalleryServiceImpl implements GalleryService {
 
     @Override
     public Gallery updateImage(Long id, GalleryDTO galleryDTO) {
-        try{
-            Gallery gallery  =  galleryRepository.findById(id)
-                    .orElseThrow(()-> new IntranetException("Image Not found", HttpStatus.NOT_FOUND)
-                    );
+        try {
+            Gallery gallery = galleryRepository.findById(id)
+                    .orElseThrow(() -> new IntranetException("Image Not found", HttpStatus.NOT_FOUND));
 
             User user = userRepository.findById(galleryDTO.getUserId())
                     .orElseThrow(() -> new IntranetException("User Not found", HttpStatus.NOT_FOUND));
 
-            modelMapper.map(galleryDTO, Gallery.class);
-            gallery.setUser(user);
+            modelMapper.map(galleryDTO, gallery); // ✅ map INTO existing entity
+
+            gallery.setUser(user); // ✅ still set explicitly if ModelMapper skips it
 
             return galleryRepository.save(gallery);
-        }  catch (IntranetException intranetException) {
 
-            log.warn("Image not found with id: {} to fetch", id, intranetException);
-            throw new IntranetException("Image Not found", HttpStatus.NOT_FOUND);
+        } catch (IntranetException intranetException) {
+            log.warn("Business error updating image id: {}", id, intranetException);
+            throw intranetException; // ✅ rethrow original
 
         } catch (Exception exception) {
-
             log.error("Error updating Image", exception);
             throw new IntranetException("Failed to update Image", HttpStatus.INTERNAL_SERVER_ERROR);
         }

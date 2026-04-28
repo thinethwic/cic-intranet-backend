@@ -45,6 +45,9 @@ public class Member {
     @Column(name = "phone_no")
     private String phoneNo;
 
+    @Column(name = "joined_date")
+    private LocalDate joinedDate;
+
     @OneToOne
     @JoinColumn(name = "user_id", nullable = true)
     @JsonIgnoreProperties({"member", "password", "news", "documents"})

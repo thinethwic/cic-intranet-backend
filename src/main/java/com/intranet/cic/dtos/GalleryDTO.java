@@ -8,8 +8,6 @@ import lombok.Data;
 @Data
 public class GalleryDTO {
 
-    private Long id;                    // null on create, required on update
-
     @NotBlank(message = "Image URL is required")
     private String image;               // URL/path as String
 

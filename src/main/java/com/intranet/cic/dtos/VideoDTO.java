@@ -24,6 +24,5 @@ public class VideoDTO {
     )
     private String videoLink;
 
-    @NotNull(message = "User ID is required")
     private Long userId;
 }

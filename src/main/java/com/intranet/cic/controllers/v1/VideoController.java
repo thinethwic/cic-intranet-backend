@@ -8,6 +8,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,10 +26,10 @@ public class VideoController extends AbstractController {
     private final ModelMapper modelMapper;
 
     @GetMapping
-    public ResponseEntity<List<Video>> getAllVideos() {
-        log.info("Request to get all videos");
-        List<Video> videos = videoService.getAllVideos();
-        return sendOkResponse(videos);
+    public ResponseEntity<Page<Video>> getAllVideos(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return sendOkResponse(videoService.getAllVideos(pageable));
     }
 
     @GetMapping("/{id}")

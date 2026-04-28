@@ -5,14 +5,17 @@ import com.intranet.cic.controllers.AbstractController;
 import com.intranet.cic.dtos.EventDTO;
 import com.intranet.cic.entities.Event;
 import com.intranet.cic.services.EventService;
+import com.intranet.cic.services.FileStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping(path = "/api/v1/events")
@@ -21,13 +24,13 @@ import org.springframework.web.bind.annotation.*;
 public class EventController extends AbstractController {
 
     private final EventService eventService;
+    private final FileStorageService fileStorageService; // ✅ add this
 
     @GetMapping
     public ResponseEntity<Page<Event>> getAllEvents(
             @PageableDefault(size = 10, sort = "id") Pageable pageable
     ) {
-        Page<Event> events = eventService.getAllEvents(pageable);
-        return sendOkResponse(events);
+        return sendOkResponse(eventService.getAllEvents(pageable));
     }
 
     @GetMapping("/{id}")
@@ -35,25 +38,42 @@ public class EventController extends AbstractController {
         return sendOkResponse(eventService.getEventById(id));
     }
 
-    @PostMapping
+    // ✅ multipart — image optional
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Event> createEvent(
-            @Valid @RequestBody EventDTO eventDTO
+            @RequestPart("data") @Valid EventDTO eventDTO,
+            @RequestPart(value = "image", required = false) MultipartFile image
     ) {
-        Event event = eventService.createEvent(eventDTO);
-        return sendCreatedResponse(event);
+        if (image != null && !image.isEmpty()) {
+            eventDTO.setImage(fileStorageService.storeImage(image));
+        }
+        return sendCreatedResponse(eventService.createEvent(eventDTO));
     }
 
-    @PutMapping("/{id}")
+    // ✅ multipart — image optional
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Event> updateEvent(
             @PathVariable Long id,
-            @Valid @RequestBody EventDTO eventDTO
+            @RequestPart("data") @Valid EventDTO eventDTO,
+            @RequestPart(value = "image", required = false) MultipartFile image
     ) {
-        Event event = eventService.updateEventById(id, eventDTO);
-        return sendOkResponse(event);
+        if (image != null && !image.isEmpty()) {
+            Event existing = eventService.getEventById(id);
+            if (existing.getImage() != null) {
+                fileStorageService.deleteFile(existing.getImage());
+            }
+            eventDTO.setImage(fileStorageService.storeImage(image));
+        }
+        return sendOkResponse(eventService.updateEventById(id, eventDTO));
     }
 
+    // ✅ delete physical image file too
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+        Event existing = eventService.getEventById(id);
+        if (existing.getImage() != null) {
+            fileStorageService.deleteFile(existing.getImage());
+        }
         eventService.deleteEvent(id);
         return sendNoContentResponse();
     }
