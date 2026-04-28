@@ -41,8 +41,6 @@ public class DocumentDTO {
 
     private Boolean allowDownload = false;  // optional — defaults to false
 
-    @NotNull(message = "Author is required")
-    private Long createdById;               // ✅ just the ID, not the full User object
-
-    private List<Long> memberIds;
+    private Long createdById;       // optional on update
+    private List<Long> memberIds;   // optional
 }

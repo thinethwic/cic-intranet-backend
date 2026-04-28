@@ -84,29 +84,39 @@ public class DocumentServiceImpl implements DocumentService {
             Document document = documentRepository.findById(id)
                     .orElseThrow(() -> new IntranetException("Document not found", HttpStatus.NOT_FOUND));
 
-            // Re-fetch user only if createdBy is provided
+            // ✅ Save relations before modelMapper wipes them
+            User existingCreatedBy = document.getCreatedBy();
+            List<Member> existingMembers = document.getMembers();
+            String existingFileUrl = document.getFileUrl();
+
+            modelMapper.map(documentDTO, document);
+
+            // ✅ Restore fileUrl — never changed on metadata update
+            document.setFileUrl(existingFileUrl);
+
+            // ✅ Update createdBy only if explicitly provided
             if (documentDTO.getCreatedById() != null) {
                 User createdBy = userRepository.findById(documentDTO.getCreatedById())
                         .orElseThrow(() -> new IntranetException("User not found", HttpStatus.NOT_FOUND));
                 document.setCreatedBy(createdBy);
+            } else {
+                document.setCreatedBy(existingCreatedBy);
             }
 
-            // Re-fetch members only if memberIds are provided
+            // ✅ Update members only if explicitly provided
             if (documentDTO.getMemberIds() != null && !documentDTO.getMemberIds().isEmpty()) {
-                List<Member> members = resolveMembers(documentDTO.getMemberIds());
-                document.setMembers(members);
+                document.setMembers(resolveMembers(documentDTO.getMemberIds()));
+            } else {
+                document.setMembers(existingMembers);
             }
-
-            modelMapper.map(documentDTO, document);         // ✅ maps into existing instance
-            document.setCreatedBy(document.getCreatedBy()); // retain after mapping
-            document.setMembers(document.getMembers());     // retain after mapping
 
             return documentRepository.save(document);
-        } catch (IntranetException intranetException) {
-            log.warn("Document, User or Member not found for id: {}", id, intranetException);
-            throw intranetException;
-        } catch (Exception exception) {
-            log.error("Error updating document", exception);
+
+        } catch (IntranetException e) {
+            log.warn("Document, User or Member not found for id: {}", id, e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Error updating document id: {}", id, e);
             throw new IntranetException("Failed to update document", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

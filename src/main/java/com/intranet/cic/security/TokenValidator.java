@@ -8,4 +8,5 @@ public interface TokenValidator {
     String extractUsername (String token);
     String extractName(String token);
     String extractEmail(String token);
+    String extractRole(String token);
 }

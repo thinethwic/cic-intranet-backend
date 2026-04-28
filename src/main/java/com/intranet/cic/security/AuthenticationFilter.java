@@ -16,7 +16,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -32,21 +31,23 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         String token = extractToken(request);
 
         if (token != null && tokenValidator.validateToken(token)) {
-            String userId   = tokenValidator.extractUserId(token);
-            String email    = tokenValidator.extractEmail(token);
-            String name     = tokenValidator.extractName(token);
             String username = tokenValidator.extractUsername(token);
+            String email    = tokenValidator.extractEmail(token);
+            String role     = tokenValidator.extractRole(token); // ✅ extract role
 
-            // ✅ Build a simple principal map — no UserDetails needed
+            List<GrantedAuthority> authorities = new ArrayList<>();
+            if (role != null) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role)); // ROLE_ADMIN or ROLE_AUTHORIZED
+            }
+
             var principal = new org.springframework.security.core.userdetails.User(
                     username != null ? username : email,
                     "",
-                    List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                    authorities
             );
 
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
-
+                    new UsernamePasswordAuthenticationToken(principal, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 

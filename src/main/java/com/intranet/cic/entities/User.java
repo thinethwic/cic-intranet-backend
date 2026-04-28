@@ -1,6 +1,7 @@
 package com.intranet.cic.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.intranet.cic.entities.types.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,6 +35,10 @@ public class User {
 
     @Column(name = "email", unique = true)
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", unique = true)
+    private UserRole role;
 
     @Column(name = "active")
     private Boolean active = true;

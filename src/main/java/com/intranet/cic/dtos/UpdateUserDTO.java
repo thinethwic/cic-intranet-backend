@@ -1,5 +1,6 @@
 package com.intranet.cic.dtos;
 
+import com.intranet.cic.entities.types.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -19,7 +20,9 @@ public class UpdateUserDTO {
             regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$",
             message = "Must contain uppercase, lowercase and a number"
     )
-    private String password;            // null = don't update
+    private String password;
+
+    private UserRole role;// null = don't update
 
     private Boolean active;             // null = don't update
 }

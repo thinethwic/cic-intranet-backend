@@ -48,18 +48,19 @@ public class AuthServiceImpl implements AuthService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                user.getUsername()
+                user.getUsername(),
+                user.getRole().name() // ✅ add this
         );
     }
 
     private String generateToken(User user) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
                 .claim("email", user.getEmail())
                 .claim("name", user.getName())
                 .claim("username", user.getUsername())
+                .claim("role", user.getRole().name()) // ✅ include role
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(key)

@@ -11,4 +11,5 @@ public class LoginResponseDTO {
     private String name;
     private String email;
     private String username;
+    private String role; // ✅ add this
 }

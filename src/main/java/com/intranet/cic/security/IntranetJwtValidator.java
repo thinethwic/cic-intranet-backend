@@ -41,6 +41,11 @@ public class IntranetJwtValidator implements TokenValidator{
     }
 
     @Override
+    public String extractRole(String token) {
+        return getClaims(token).get("role", String.class);
+    }
+
+    @Override
     public boolean validateToken(String token) {
         try {
             Jwts.parser()

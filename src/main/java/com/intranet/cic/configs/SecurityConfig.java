@@ -2,6 +2,7 @@ package com.intranet.cic.configs;
 
 import com.intranet.cic.security.AuthenticationFilter;
 import com.intranet.cic.security.IntranetAuthenticationEntryPoint;
+import com.intranet.cic.security.IntranetCustomAccessDeniedHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +27,7 @@ public class SecurityConfig {
     private final AuthenticationFilter authenticationFilter;
 
     private final IntranetAuthenticationEntryPoint intranetAuthenticationEntryPoint;
+    private final IntranetCustomAccessDeniedHandler intranetCustomAccessDeniedHandler;
     private final CorsConfigurationSource corsConfigurationSource;
 
     //TODO: handle unauthorized error 403
@@ -38,6 +40,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(intranetAuthenticationEntryPoint)
+                        .accessDeniedHandler(intranetCustomAccessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
@@ -75,14 +78,16 @@ public class SecurityConfig {
                                 "/api/v1/news/*",
                                 "/api/v1/news/*/image",
                                 "/api/v1/users").permitAll()
+                        // ✅ ADMIN only — full CRUD on everything
                         .requestMatchers(HttpMethod.POST,
-                                "/api/v1/events",
-                                "/api/v1/members",
-                                "/api/v1/videos",
-                                "/api/v1/images",
-                                "/api/v1/documents",
-                                "/api/v1/news",
-                                "/api/v1/users").permitAll()
+                                "/api/v1/news/**",
+                                "/api/v1/events/**",
+                                "/api/v1/documents/**",
+                                "/api/v1/images/**",
+                                "/api/v1/videos/**",
+                                "/api/v1/users/**",
+                                "/api/v1/announcements/**"
+                        ).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
