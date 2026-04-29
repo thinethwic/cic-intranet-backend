@@ -42,5 +42,5 @@ public class MemberDTO {
 
     private LocalDate joinedDate;
 
-    private Long userId;
+    private Long user;
 }

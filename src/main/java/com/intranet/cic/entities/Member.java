@@ -48,9 +48,8 @@ public class Member {
     @Column(name = "joined_date")
     private LocalDate joinedDate;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = true)
-    @JsonIgnoreProperties({"member", "password", "news", "documents"})
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)  // ← removed nullable = true
     private User user;
 
     @CreationTimestamp

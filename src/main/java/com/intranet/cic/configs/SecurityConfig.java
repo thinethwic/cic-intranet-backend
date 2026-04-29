@@ -87,7 +87,7 @@ public class SecurityConfig {
                                 "/api/v1/videos/**",
                                 "/api/v1/users/**",
                                 "/api/v1/announcements/**"
-                        ).hasRole("ADMIN")
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)

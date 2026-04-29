@@ -37,7 +37,7 @@ public class User {
     private String email;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", unique = true)
+    @Column(name = "role")
     private UserRole role;
 
     @Column(name = "active")
@@ -71,7 +71,7 @@ public class User {
     @JsonIgnoreProperties({"user"})
     private List<Gallery> galleries = new ArrayList<>();
 
-    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnoreProperties({"user"})
-    private Member member;
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("user")  // prevents infinite recursion in JSON serialization
+    private List<Member> members = new ArrayList<>();
 }

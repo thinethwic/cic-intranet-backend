@@ -54,15 +54,15 @@ public class MemberServiceImpl implements MemberService {
             Member member = modelMapper.map(memberDTO, Member.class);
 
 
-            if (memberDTO.getUserId() != null) {
-                User user = userRepository.findById(memberDTO.getUserId())
+            if (memberDTO.getUser() != null) {
+                User user = userRepository.findById(memberDTO.getUser())
                         .orElseThrow(() -> new IntranetException("User not found", HttpStatus.NOT_FOUND));
                 member.setUser(user);
             }
 
             return memberRepository.save(member);
         } catch (IntranetException intranetException) {
-            log.warn("User not found with id: {} to create member", memberDTO.getUserId(), intranetException);
+            log.warn("User not found with id: {} to create member", memberDTO.getUser(), intranetException);
             throw intranetException;
         } catch (Exception exception) {
             log.error("Failed to create member", exception);
@@ -76,19 +76,19 @@ public class MemberServiceImpl implements MemberService {
             Member member = memberRepository.findById(id)
                     .orElseThrow(() -> new IntranetException("Member not found", HttpStatus.NOT_FOUND));
 
-            // Save user reference before ModelMapper overwrites it
-            User existingUser = member.getUser();
+            // ✅ Configure ModelMapper to skip the user field
+            modelMapper.typeMap(MemberDTO.class, Member.class)
+                    .addMappings(mapper -> mapper.skip(Member::setUser));
 
-            modelMapper.map(memberDTO, member);   // map first
+            modelMapper.map(memberDTO, member);
 
-            // ✅ Re-fetch and set user if new userId provided, otherwise retain existing
-            if (memberDTO.getUserId() != null) {
-                User user = userRepository.findById(memberDTO.getUserId())
+            // ✅ Handle user assignment separately
+            if (memberDTO.getUser() != null) {
+                User user = userRepository.findById(memberDTO.getUser())
                         .orElseThrow(() -> new IntranetException("User not found", HttpStatus.NOT_FOUND));
                 member.setUser(user);
-            } else {
-                member.setUser(existingUser);     // ✅ retain existing user after mapping
             }
+            // else: user remains untouched since ModelMapper skips it
 
             return memberRepository.save(member);
         } catch (IntranetException intranetException) {
