@@ -30,6 +30,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
         String token = extractToken(request);
 
+
         if (token != null && tokenValidator.validateToken(token)) {
             String username = tokenValidator.extractUsername(token);
             String email    = tokenValidator.extractEmail(token);
