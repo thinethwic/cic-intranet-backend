@@ -29,7 +29,7 @@ public class TicketDTO {
     private String description;
 
     @NotNull(message = "Category is required")
-    private TicketCategory category;
+    private String category;
 
     @NotNull(message = "Priority is required")
     private TicketPriority priority;

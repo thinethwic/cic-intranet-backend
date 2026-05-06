@@ -2,6 +2,7 @@ package com.intranet.cic.controllers.v1;
 
 import com.intranet.cic.dtos.TicketCommentDTO;
 import com.intranet.cic.dtos.TicketDTO;
+import com.intranet.cic.entities.Ticket;
 import com.intranet.cic.entities.types.TicketCategory;
 import com.intranet.cic.entities.types.TicketStatus;
 import com.intranet.cic.services.TicketService;
@@ -25,7 +26,7 @@ public class AdminTicketController {
 
     // ─── All tickets (unfiltered) ────────────────────────────────
     @GetMapping
-    public ResponseEntity<Page<TicketDTO>> getAllTickets(
+    public ResponseEntity<Page<Ticket>> getAllTickets(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
         return ResponseEntity.ok(ticketService.getAllTickets(pageable));
     }

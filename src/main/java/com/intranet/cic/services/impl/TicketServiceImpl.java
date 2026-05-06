@@ -99,11 +99,11 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TicketDTO> getAllTickets(Pageable pageable) {
+    public Page<Ticket> getAllTickets(Pageable pageable) {
         log.info("Fetching all tickets");
 
         return ticketRepository.findAll(pageable)
-                .map(ticket -> modelMapper.map(ticket, TicketDTO.class));
+                .map(ticket -> modelMapper.map(ticket, Ticket.class));
     }
 
     @Override
@@ -163,10 +163,24 @@ public class TicketServiceImpl implements TicketService {
 
     // ─── Comments ───────────────────────────────────────────────
 
+    private TicketCommentDTO toCommentDTO(TicketComment comment) {
+        TicketCommentDTO dto = new TicketCommentDTO();
+        dto.setId(comment.getId());
+        dto.setMessage(comment.getMessage());
+        dto.setIsInternal(comment.getIsInternal());
+        dto.setCreatedAt(comment.getCreatedAt());
+
+        TicketCommentDTO.CommentedByDTO commentedBy = new TicketCommentDTO.CommentedByDTO();
+        commentedBy.setId(comment.getCommentedBy().getId());
+        commentedBy.setName(comment.getCommentedBy().getName());
+        commentedBy.setRole(comment.getCommentedBy().getRole().name()); // ← role included
+        dto.setCommentedBy(commentedBy);
+
+        return dto;
+    }
+
     @Override
     public TicketCommentDTO addComment(Long ticketId, TicketCommentDTO commentDTO) {
-        log.info("Adding comment to ticket id: {}", ticketId);
-
         User currentUser = getCurrentUser();
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -180,7 +194,7 @@ public class TicketServiceImpl implements TicketService {
                 commentDTO.getIsInternal() != null && commentDTO.getIsInternal()
         );
 
-        return modelMapper.map(ticketCommentRepository.save(comment), TicketCommentDTO.class);
+        return toCommentDTO(ticketCommentRepository.save(comment)); // ← manual mapping
     }
 
     @Override
@@ -192,7 +206,7 @@ public class TicketServiceImpl implements TicketService {
                 .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + ticketId));
 
         return ticketCommentRepository.findByTicketOrderByCreatedAtAsc(ticket, pageable)
-                .map(comment -> modelMapper.map(comment, TicketCommentDTO.class));
+                .map(this::toCommentDTO); // ← manual mapping
     }
 
     // ─── Shared ─────────────────────────────────────────────────
@@ -213,6 +227,16 @@ public class TicketServiceImpl implements TicketService {
             if (ticketDTO.getStatus() == TicketStatus.RESOLVED) {
                 ticket.setResolvedAt(LocalDateTime.now());
             }
+        }
+
+        // ── Handle assignedTo ──────────────────────────────────────────
+        if (ticketDTO.getAssignedTo() != null && ticketDTO.getAssignedTo().getId() != null) {
+            User assignee = userRepository.findById(ticketDTO.getAssignedTo().getId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            ticket.setAssignedTo(assignee);
+        } else if (ticketDTO.getAssignedTo() == null) {
+            // Explicitly unassign if null is sent
+            ticket.setAssignedTo(null);
         }
 
         return modelMapper.map(ticketRepository.save(ticket), TicketDTO.class);

@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import static com.intranet.cic.constants.UserRoles.*;
+
 @RestController
 @RequestMapping("/api/tickets")
 @RequiredArgsConstructor
@@ -23,7 +25,7 @@ public class TicketController {
 
     // Only AUTHORIZED role can submit tickets
     @PostMapping
-    @PreAuthorize("hasRole('AUTHORIZED')")
+    @PreAuthorize("hasAnyRole('" + ROLE_ADMIN + "', '" + ROLE_AUTHORIZED + "','" + ROLE_SERVICE + "')")
     public ResponseEntity<TicketDTO> createTicket(@Valid @RequestBody TicketDTO ticketDTO) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ticketService.createTicket(ticketDTO));
@@ -31,20 +33,20 @@ public class TicketController {
 
     // Only AUTHORIZED role can view their own tickets
     @GetMapping("/my")
-    @PreAuthorize("hasRole('AUTHORIZED')")
+    @PreAuthorize("hasAnyRole('" + ROLE_ADMIN + "', '" + ROLE_AUTHORIZED + "','" + ROLE_SERVICE + "')")
     public ResponseEntity<Page<TicketDTO>> getMyTickets(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
         return ResponseEntity.ok(ticketService.getMyTickets(pageable));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('AUTHORIZED')")
+    @PreAuthorize("hasAnyRole('" + ROLE_ADMIN + "', '" + ROLE_AUTHORIZED + "','" + ROLE_SERVICE + "')")
     public ResponseEntity<TicketDTO> getTicketById(@PathVariable Long id) {
         return ResponseEntity.ok(ticketService.getTicketById(id));
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('AUTHORIZED')")
+    @PreAuthorize("hasAnyRole('" + ROLE_ADMIN + "', '" + ROLE_AUTHORIZED + "','" + ROLE_SERVICE + "')")
     public ResponseEntity<TicketDTO> updateTicket(
             @PathVariable Long id,
             @RequestBody TicketDTO ticketDTO) {
@@ -52,14 +54,14 @@ public class TicketController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('AUTHORIZED')")
+    @PreAuthorize("hasAnyRole('" + ROLE_ADMIN + "', '" + ROLE_AUTHORIZED + "','" + ROLE_SERVICE + "')")
     public ResponseEntity<Void> deleteTicket(@PathVariable Long id) {
         ticketService.deleteTicket(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/comments")
-    @PreAuthorize("hasRole('AUTHORIZED')")
+    @PreAuthorize("hasAnyRole('" + ROLE_ADMIN + "', '" + ROLE_AUTHORIZED + "','" + ROLE_SERVICE + "')")
     public ResponseEntity<TicketCommentDTO> addComment(
             @PathVariable Long id,
             @Valid @RequestBody TicketCommentDTO commentDTO) {
@@ -68,7 +70,7 @@ public class TicketController {
     }
 
     @GetMapping("/{id}/comments")
-    @PreAuthorize("hasRole('AUTHORIZED')")
+    @PreAuthorize("hasAnyRole('" + ROLE_ADMIN + "', '" + ROLE_AUTHORIZED + "','" + ROLE_SERVICE + "')")
     public ResponseEntity<Page<TicketCommentDTO>> getComments(
             @PathVariable Long id,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {

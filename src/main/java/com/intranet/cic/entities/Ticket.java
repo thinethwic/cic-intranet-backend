@@ -32,9 +32,9 @@ public class Ticket {
     @Column(name = "description", columnDefinition = "TEXT", nullable = false)
     private String description;
 
-    @Enumerated(EnumType.STRING)
+
     @Column(name = "category", nullable = false)
-    private TicketCategory category;   // IT, HR, FINANCE, FACILITIES, OTHER
+    private String category;   // IT, HR, FINANCE, FACILITIES, OTHER
 
     @Enumerated(EnumType.STRING)
     @Column(name = "priority", nullable = false)
