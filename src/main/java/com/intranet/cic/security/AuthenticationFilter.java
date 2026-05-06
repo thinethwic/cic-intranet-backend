@@ -32,13 +32,15 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
 
         if (token != null && tokenValidator.validateToken(token)) {
-            String username = tokenValidator.extractUsername(token);
-            String email    = tokenValidator.extractEmail(token);
-            String role     = tokenValidator.extractRole(token); // ✅ extract role
+            String username   = tokenValidator.extractUsername(token);
+            String email      = tokenValidator.extractEmail(token);
+            String role       = tokenValidator.extractRole(token);
+            String location   = tokenValidator.extractLocation(token);
+            String department = tokenValidator.extractDepartment(token);
 
             List<GrantedAuthority> authorities = new ArrayList<>();
             if (role != null) {
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + role)); // ROLE_ADMIN or ROLE_AUTHORIZED
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
             }
 
             var principal = new org.springframework.security.core.userdetails.User(
@@ -49,6 +51,14 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(principal, null, authorities);
+
+            // ── Store token claims as details so controllers can access them ──
+            authentication.setDetails(java.util.Map.of(
+                    "location",   location   != null ? location   : "",
+                    "department", department != null ? department : "",
+                    "email",      email      != null ? email      : ""
+            ));
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 

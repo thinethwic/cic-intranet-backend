@@ -46,6 +46,16 @@ public class IntranetJwtValidator implements TokenValidator{
     }
 
     @Override
+    public String extractLocation(String token) {
+        return getClaims(token).get("location", String.class);
+    }
+
+    @Override
+    public String extractDepartment(String token) {
+        return getClaims(token).get("department", String.class);
+    }
+
+    @Override
     public boolean validateToken(String token) {
         try {
             Jwts.parser()

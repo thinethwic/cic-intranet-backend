@@ -71,9 +71,9 @@ public class SecurityConfig {
 
                         // ✅ Ticket endpoints — must be authenticated
                         .requestMatchers("/api/tickets/**").authenticated()
-
                         // ✅ Admin endpoints — must be authenticated + ADMIN role
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
 
                         .anyRequest().authenticated()
                 )

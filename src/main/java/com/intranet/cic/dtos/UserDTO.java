@@ -1,5 +1,6 @@
 package com.intranet.cic.dtos;
 
+import com.intranet.cic.entities.types.Segment;
 import com.intranet.cic.entities.types.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -40,4 +41,8 @@ public class UserDTO {
     private UserRole role;
 
     private Boolean active = true;
+
+    private Segment segment;
+
+    private String department;
 }

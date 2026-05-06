@@ -61,6 +61,8 @@ public class AuthServiceImpl implements AuthService {
                 .claim("name", user.getName())
                 .claim("username", user.getUsername())
                 .claim("role", user.getRole().name()) // ✅ include role
+                .claim("location", user.getSegment())
+                .claim("department", user.getDepartment())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(key)

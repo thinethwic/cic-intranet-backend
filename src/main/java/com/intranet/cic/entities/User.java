@@ -1,6 +1,7 @@
 package com.intranet.cic.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.intranet.cic.entities.types.Segment;
 import com.intranet.cic.entities.types.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -42,6 +43,13 @@ public class User {
 
     @Column(name = "active")
     private Boolean active = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "segment", nullable= false)
+    private Segment segment;
+
+    @Column(name = "department", nullable = true)
+    private String department;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -1,5 +1,6 @@
 package com.intranet.cic.dtos;
 
+import com.intranet.cic.entities.types.Segment;
 import com.intranet.cic.entities.types.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
@@ -9,20 +10,29 @@ import lombok.Data;
 @Data
 public class UpdateUserDTO {
 
-    @Size(min = 2, max = 100)
-    private String name;                // null = don't update
-
-    @Email(message = "Invalid email address")
-    private String email;               // null = don't update
-
-    @Size(min = 8, max = 100)
+    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$",
-            message = "Must contain uppercase, lowercase and a number"
+            regexp = "^[a-zA-Z0-9_]+$",
+            message = "Username can only contain letters, numbers and underscores"
     )
+    private String username;
+
+    // Optional — only update if provided
+    @Size(min = 8, max = 100, message = "Password must be at least 8 characters")
     private String password;
 
-    private UserRole role;// null = don't update
+    @Size(min = 2, max = 100)
+    private String name;
 
-    private Boolean active;             // null = don't update
+    @Email
+    @Size(max = 100)
+    private String email;
+
+    private UserRole role;
+
+    private Boolean active;
+
+    private Segment segment;
+
+    private String department;
 }
