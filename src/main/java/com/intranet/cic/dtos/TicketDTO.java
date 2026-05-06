@@ -3,7 +3,6 @@ package com.intranet.cic.dtos;
 import com.intranet.cic.entities.TicketComment;
 import com.intranet.cic.entities.User;
 import com.intranet.cic.entities.types.Segment;
-import com.intranet.cic.entities.types.TicketCategory;
 import com.intranet.cic.entities.types.TicketPriority;
 import com.intranet.cic.entities.types.TicketStatus;
 import jakarta.validation.constraints.NotBlank;
@@ -11,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,4 +46,6 @@ public class TicketDTO {
     private String department;
 
     private List<TicketComment> comments = new ArrayList<>();
+
+    private LocalDateTime createdAt;
 }

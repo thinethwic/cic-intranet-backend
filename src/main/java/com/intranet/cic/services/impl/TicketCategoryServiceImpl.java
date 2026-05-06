@@ -15,10 +15,10 @@ public class TicketCategoryServiceImpl implements TicketCategoryService {
 
     // ── Employee — filtered by segment + department ───────────────────────
     public List<TicketCategory> getApplicableCategories(String segment, String department) {
-        return ticketCategoryRepository.findApplicable(
-                segment,
-                department != null ? department : ""
-        );
+        if (department != null && !department.isBlank()) {
+            return ticketCategoryRepository.findBySegmentAndDepartment(segment, department);
+        }
+        return ticketCategoryRepository.findBySegmentOnly(segment);
     }
 
     // ── Admin — all categories ────────────────────────────────────────────
