@@ -46,34 +46,38 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/public/**",
                                 "/v3/api-docs/**"
-                                // ...swagger etc
                         ).permitAll()
                         .requestMatchers("/uploads/images/**").permitAll()
                         .requestMatchers("/uploads/documents/**").permitAll()
+
+                        // Public read-only endpoints
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/events", "/api/v1/members", "/api/v1/videos",
                                 "/api/v1/images", "/api/v1/documents",
                                 "/api/v1/documents/*/view", "/api/v1/documents/*/download",
-                                "/api/v1/news", "/api/v1/news/*", "/api/v1/news/*/image",
-                                "/api/v1/users"
+                                "/api/v1/news", "/api/v1/news/*", "/api/v1/news/*/image"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.PUT,
-                                "/api/v1/events", "/api/v1/members", "/api/v1/videos",
-                                "/api/v1/images", "/api/v1/documents",
-                                "/api/v1/news", "/api/v1/news/*", "/api/v1/news/*/image",
-                                "/api/v1/users"
-                        ).permitAll()
+
+                        // Departments — authenticated; @PreAuthorize handles role checks
+                        .requestMatchers("/api/v1/departments/**").authenticated()
+
+                        // Users
+                        .requestMatchers(HttpMethod.GET,  "/api/v1/users").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT,  "/api/v1/users").permitAll()
+
+                        // Other POST endpoints
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/news/**", "/api/v1/events/**", "/api/v1/documents/**",
-                                "/api/v1/images/**", "/api/v1/videos/**", "/api/v1/users/**",
+                                "/api/v1/images/**", "/api/v1/videos/**",
                                 "/api/v1/announcements/**"
                         ).permitAll()
 
-                        // ✅ Ticket endpoints — must be authenticated
+                        // Ticket endpoints — authenticated
                         .requestMatchers("/api/tickets/**").authenticated()
-                        // ✅ Admin endpoints — must be authenticated + ADMIN role
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
+                        // Admin endpoints
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         .anyRequest().authenticated()
                 )

@@ -10,6 +10,10 @@ import java.util.List;
 
 public interface TicketCategoryRepository extends JpaRepository<TicketCategory, Long> {
 
+    boolean existsByNameIgnoreCaseAndSegment(String name, String segment);
+
+    boolean existsByNameIgnoreCaseAndSegmentAndIdNot(String name, String segment, Long excludeId);
+
     // Used when segment + department both provided
     @Query("""
         SELECT c FROM TicketCategory c

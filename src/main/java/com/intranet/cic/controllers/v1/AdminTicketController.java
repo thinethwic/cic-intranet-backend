@@ -1,5 +1,6 @@
 package com.intranet.cic.controllers.v1;
 
+import com.intranet.cic.controllers.AbstractController;
 import com.intranet.cic.dtos.TicketCommentDTO;
 import com.intranet.cic.dtos.TicketDTO;
 import com.intranet.cic.entities.Ticket;
@@ -16,11 +17,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import static com.intranet.cic.constants.UserRoles.*;
+import static com.intranet.cic.constants.UserRoles.ROLE_SERVICE;
+
 @RestController
 @RequestMapping("/api/admin/tickets")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN')")
-public class AdminTicketController {
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+public class AdminTicketController extends AbstractController {
 
     private final TicketService ticketService;
 
@@ -28,7 +32,15 @@ public class AdminTicketController {
     @GetMapping
     public ResponseEntity<Page<Ticket>> getAllTickets(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
-        return ResponseEntity.ok(ticketService.getAllTickets(pageable));
+        return sendOkResponse(ticketService.getAllTickets(pageable));
+    }
+
+    // ─── Get tickets by segment (for ADMIN role) ─────────────────
+    @GetMapping("/my-segment")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<Ticket>> getTicketsBySegment(
+            @PageableDefault(size = 100, sort = "createdAt") Pageable pageable) {
+        return sendOkResponse(ticketService.getTicketsByCurrentAdminSegment(pageable));
     }
 
     // ─── Filter by status ────────────────────────────────────────
@@ -36,7 +48,7 @@ public class AdminTicketController {
     public ResponseEntity<Page<TicketDTO>> getByStatus(
             @PathVariable TicketStatus status,
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
-        return ResponseEntity.ok(ticketService.getTicketsByStatus(pageable, status));
+        return sendOkResponse(ticketService.getTicketsByStatus(pageable, status));
     }
 
     // ─── Filter by category ──────────────────────────────────────
@@ -44,7 +56,7 @@ public class AdminTicketController {
     public ResponseEntity<Page<TicketDTO>> getByCategory(
             @PathVariable TicketCategory category,
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
-        return ResponseEntity.ok(ticketService.getTicketsByCategory(pageable, category));
+        return sendOkResponse(ticketService.getTicketsByCategory(pageable, category));
     }
 
     // ─── Assign ticket to a handler ──────────────────────────────
@@ -52,7 +64,7 @@ public class AdminTicketController {
     public ResponseEntity<TicketDTO> assignTicket(
             @PathVariable Long ticketId,
             @PathVariable Long userId) {
-        return ResponseEntity.ok(ticketService.assignTicket(ticketId, userId));
+        return sendOkResponse(ticketService.assignTicket(ticketId, userId));
     }
 
     // ─── Update status only ──────────────────────────────────────
@@ -60,7 +72,7 @@ public class AdminTicketController {
     public ResponseEntity<TicketDTO> updateStatus(
             @PathVariable Long ticketId,
             @RequestParam TicketStatus status) {
-        return ResponseEntity.ok(ticketService.updateTicketStatus(ticketId, status));
+        return sendOkResponse(ticketService.updateTicketStatus(ticketId, status));
     }
 
     // ─── Full update (title, desc, priority, status, category) ───
@@ -68,15 +80,15 @@ public class AdminTicketController {
     public ResponseEntity<TicketDTO> updateTicket(
             @PathVariable Long ticketId,
             @RequestBody TicketDTO ticketDTO) {
-        return ResponseEntity.ok(ticketService.updateTicket(ticketId, ticketDTO));
+        return sendOkResponse(ticketService.updateTicket(ticketId, ticketDTO));
     }
 
     // ─── Delete any ticket ───────────────────────────────────────
     @DeleteMapping("/{ticketId}")
-    @PreAuthorize("hasRole('ADMIN')")          // handlers can't delete
+    @PreAuthorize("hasAnyRole('" + ROLE_SUPER_ADMIN + "','" + ROLE_ADMIN + "')")          // handlers can't delete
     public ResponseEntity<Void> deleteTicket(@PathVariable Long ticketId) {
         ticketService.deleteTicket(ticketId);
-        return ResponseEntity.noContent().build();
+        return sendNoContentResponse();
     }
 
     // ─── Add internal note / public reply ────────────────────────
@@ -84,8 +96,7 @@ public class AdminTicketController {
     public ResponseEntity<TicketCommentDTO> addComment(
             @PathVariable Long ticketId,
             @Valid @RequestBody TicketCommentDTO commentDTO) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ticketService.addComment(ticketId, commentDTO));
+        return sendCreatedResponse(ticketService.addComment(ticketId, commentDTO));
     }
 
     // ─── Get comments for a ticket ───────────────────────────────
@@ -93,6 +104,6 @@ public class AdminTicketController {
     public ResponseEntity<Page<TicketCommentDTO>> getComments(
             @PathVariable Long ticketId,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        return ResponseEntity.ok(ticketService.getCommentsByTicket(pageable, ticketId));
+        return sendOkResponse(ticketService.getCommentsByTicket(pageable, ticketId));
     }
 }
