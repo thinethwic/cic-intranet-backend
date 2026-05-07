@@ -20,10 +20,13 @@ public class HotNewsDemotionScheduler {
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void demoteExpiredHotNews() {
-        LocalDateTime oneMonthAgo = LocalDateTime.now().minusMonths(1);
+        LocalDateTime cutoff = LocalDateTime.now().minusMonths(1);
+        int updated = newsRepository.demoteHotNewsOlderThan(cutoff);
 
-        int updated = newsRepository.demoteHotNewsOlderThan(oneMonthAgo);
-
-        log.info("Hot news demotion job ran — {} article(s) demoted to normal.", updated);
+        if (updated > 0) {
+            log.info("Hot news demotion — {} article(s) demoted to normal.", updated);
+        } else {
+            log.debug("Hot news demotion — no articles to demote.");
+        }
     }
 }

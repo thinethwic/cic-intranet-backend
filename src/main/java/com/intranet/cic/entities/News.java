@@ -44,6 +44,9 @@ public class News {
     @Column(name = "is_hot", nullable = false)
     private Boolean isHot = false;
 
+    @Column(name = "hot_since")
+    private LocalDateTime hotSince;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

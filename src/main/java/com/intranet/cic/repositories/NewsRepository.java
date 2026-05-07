@@ -11,8 +11,15 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 
 public interface NewsRepository extends JpaRepository<News, Long> {
+    // NewsRepository.java
     @Modifying
-    @Query("UPDATE News n SET n.isHot = false WHERE n.isHot = true AND n.createdAt < :cutoff")
+    @Query("""
+    UPDATE News n
+    SET n.isHot = false, n.hotSince = null
+    WHERE n.isHot = true
+    AND n.hotSince IS NOT NULL
+    AND n.hotSince < :cutoff
+    """)
     int demoteHotNewsOlderThan(@Param("cutoff") LocalDateTime cutoff);
 
     Page<News> findAllByOrderByCreatedAtDesc(Pageable pageable);

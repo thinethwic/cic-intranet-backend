@@ -17,6 +17,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -59,16 +61,28 @@ public class NewsServiceImpl implements NewsService {
 
     @Override
     public News createNews(NewsDTO newsDTO) {
-        try{
+        try {
             User author = userRepository.findById(newsDTO.getAuthorId())
                     .orElseThrow(() -> new IntranetException("Author not found", HttpStatus.NOT_FOUND));
 
             News news = modelMapper.map(newsDTO, News.class);
             news.setAuthor(author);
 
+            // Stamp hotSince only if the article is being created as hot
+            if (Boolean.TRUE.equals(newsDTO.getIsHot())) {
+                news.setIsHot(true);
+                news.setHotSince(LocalDateTime.now());
+            } else {
+                news.setIsHot(false);
+                news.setHotSince(null);
+            }
+
             return newsRepository.save(news);
-        } catch (Exception exception){
-            log.error("Failed to create news", exception);
+
+        } catch (IntranetException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to create news", e);
             throw new IntranetException("Failed to create news", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -79,11 +93,34 @@ public class NewsServiceImpl implements NewsService {
             News news = newsRepository.findById(id)
                     .orElseThrow(() -> new IntranetException("News not found", HttpStatus.NOT_FOUND));
 
-            String existingImage = news.getImage(); // ✅ save before ModelMapper wipes it
+            String existingImage = news.getImage();         // save before ModelMapper wipes it
+            boolean wasHot       = news.getIsHot();            // save before ModelMapper overwrites it
+            LocalDateTime existingHotSince = news.getHotSince();
+
             modelMapper.map(newsDTO, news);
 
+            // Restore image if no new image was provided
             if (newsDTO.getImage() == null) {
-                news.setImage(existingImage); // ✅ restore if no new image
+                news.setImage(existingImage);
+            }
+
+            // Handle hot/hotSince transition correctly
+            boolean isNowHot = Boolean.TRUE.equals(newsDTO.getIsHot());
+
+            if (isNowHot && !wasHot) {
+                // Article is being promoted to hot — stamp the time
+                news.setIsHot(true);
+                news.setHotSince(LocalDateTime.now());
+
+            } else if (!isNowHot && wasHot) {
+                // Article is being manually demoted — clear the stamp
+                news.setIsHot(false);
+                news.setHotSince(null);
+
+            } else {
+                // Hot status unchanged — preserve the original hotSince so the
+                // scheduler expiry clock is not reset on unrelated edits
+                news.setHotSince(existingHotSince);
             }
 
             if (newsDTO.getAuthorId() != null) {
