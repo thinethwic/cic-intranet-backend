@@ -2,6 +2,7 @@ package com.intranet.cic.repositories;
 
 import com.intranet.cic.entities.Ticket;
 import com.intranet.cic.entities.User;
+import com.intranet.cic.entities.types.Segment;
 import com.intranet.cic.entities.types.TicketCategory;
 import com.intranet.cic.entities.types.TicketStatus;
 import org.springframework.data.domain.Page;
@@ -19,4 +20,9 @@ public interface TicketRepository extends JpaRepository<Ticket,Long> {
     Page<Ticket> findBySubmittedBy(User submittedBy, Pageable pageable);
     Page<Ticket> findByStatus(TicketStatus status, Pageable pageable);
     Page<Ticket> findByCategory(TicketCategory category, Pageable pageable);
+
+    Page<Ticket> findBySegment(Segment segment, Pageable pageable);
+
+    Page<Ticket> findBySegmentAndDepartment(Segment segment, String department, Pageable pageable);
+
 }

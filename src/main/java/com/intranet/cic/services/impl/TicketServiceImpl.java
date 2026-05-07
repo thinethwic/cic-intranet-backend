@@ -5,6 +5,7 @@ import com.intranet.cic.dtos.TicketDTO;
 import com.intranet.cic.entities.Ticket;
 import com.intranet.cic.entities.TicketComment;
 import com.intranet.cic.entities.User;
+import com.intranet.cic.entities.types.Segment;
 import com.intranet.cic.entities.types.TicketCategory;
 import com.intranet.cic.entities.types.TicketStatus;
 import com.intranet.cic.repositories.TicketCommentRepository;
@@ -251,5 +252,27 @@ public class TicketServiceImpl implements TicketService {
 
         ticketRepository.delete(ticket);
         log.info("Ticket {} deleted", ticket.getTicketNumber());
+    }
+
+    public Page<Ticket> getTicketsByCurrentAdminSegment(Pageable pageable) {
+        String principal = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        User admin = userRepository.findByUsername(principal)
+                .orElseThrow(() -> new RuntimeException("Admin user not found"));
+
+        Segment segment = admin.getSegment();
+        if (segment == null) {
+            return Page.empty(pageable);
+        }
+
+        String department = admin.getDepartment();
+
+        // If admin has a department, filter by both segment + department
+        if (department != null && !department.isBlank()) {
+            return ticketRepository.findBySegmentAndDepartment(segment, department, pageable);
+        }
+
+        // No department — return all tickets for the segment
+        return ticketRepository.findBySegment(segment, pageable);
     }
 }

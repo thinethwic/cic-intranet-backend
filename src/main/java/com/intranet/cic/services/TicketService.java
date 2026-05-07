@@ -30,4 +30,6 @@ public interface TicketService {
     // ─── Shared ─────────────────────────────────────────────────
     TicketDTO updateTicket(Long ticketId, TicketDTO ticketDTO);
     void deleteTicket(Long ticketId);
+
+    Page<Ticket> getTicketsByCurrentAdminSegment(Pageable pageable);
 }
