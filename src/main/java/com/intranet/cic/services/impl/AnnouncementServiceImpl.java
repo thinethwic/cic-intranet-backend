@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -54,8 +55,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     @Override
     public Announcement createAnnouncement(AnnouncementDTO announcementDTO) {
         try {
-            User user = userRepository.findById(announcementDTO.getUserId())
-                    .orElseThrow(() -> new IntranetException("User Not found", HttpStatus.NOT_FOUND));
+            User user = getAuthenticatedUser();  // ← resolve from JWT
 
             Announcement announcement = modelMapper.map(announcementDTO, Announcement.class);
             announcement.setUser(user);
@@ -64,7 +64,9 @@ public class AnnouncementServiceImpl implements AnnouncementService {
                 announcement.setIsRead(false);
             }
             return announcementRepository.save(announcement);
-        } catch (Exception exception){
+        } catch (IntranetException e) {
+            throw e;
+        } catch (Exception exception) {
             log.error("Failed to create Announcement", exception);
             throw new IntranetException("Failed to create Announcement", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -76,25 +78,28 @@ public class AnnouncementServiceImpl implements AnnouncementService {
             Announcement announcement = announcementRepository.findById(id)
                     .orElseThrow(() -> new IntranetException("Announcement Not found", HttpStatus.NOT_FOUND));
 
-            User user = userRepository.findById(announcementDTO.getUserId())
-                    .orElseThrow(() -> new IntranetException("User Not found", HttpStatus.NOT_FOUND));
-
+            User user = getAuthenticatedUser();  // ← resolve from JWT
             modelMapper.map(announcementDTO, announcement);
             announcement.setUser(user);
 
             if (announcement.getIsRead() == null) {
                 announcement.setIsRead(false);
             }
-
             return announcementRepository.save(announcement);
-
-        } catch (IntranetException intranetException) {
-            log.warn("Not found during announcement update - id: {}", id, intranetException);
-            throw intranetException;
+        } catch (IntranetException e) {
+            log.warn("Not found during announcement update - id: {}", id, e);
+            throw e;
         } catch (Exception exception) {
             log.error("Error updating announcement", exception);
             throw new IntranetException("Failed to update announcement", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    // Add this private helper at the bottom of the class
+    private User getAuthenticatedUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new IntranetException("Authenticated user not found", HttpStatus.UNAUTHORIZED));
     }
 
 

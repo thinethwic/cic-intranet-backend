@@ -1,5 +1,5 @@
 package com.intranet.cic.entities.types;
 
 public enum TicketStatus {
-    OPEN, IN_PROGRESS, RESOLVED, CLOSED
+    OPEN, IN_PROGRESS, RESOLVED, UNRESOLVED
 }

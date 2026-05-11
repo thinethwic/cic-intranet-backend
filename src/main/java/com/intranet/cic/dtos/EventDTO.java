@@ -33,7 +33,6 @@ public class EventDTO {
     @Size(min = 2, max = 200, message = "Location must be between 2 and 200 characters")
     private String location;
 
-    @NotNull(message = "Segment is required")
     private Segment segment;
 
     @NotNull(message = "User ID is required")

@@ -39,8 +39,8 @@ public class Event {
     private String location;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "segment", nullable = false)
-    private Segment segment;    // reuse your existing segment enum
+    @Column(name = "segment")
+    private Segment segment;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
