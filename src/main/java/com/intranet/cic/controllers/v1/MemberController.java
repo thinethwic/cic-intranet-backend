@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping(path = "/api/v1/members")
 @RequiredArgsConstructor
-@Slf4j
 public class MemberController extends AbstractController {
 
     private final MemberService memberService;
@@ -23,21 +22,18 @@ public class MemberController extends AbstractController {
     @GetMapping
     public ResponseEntity<Page<Member>> getAllMembers(
             @PageableDefault(size = 10, sort = "id") Pageable pageable) {
-        log.info("Request to get all members");
         Page<Member> members = memberService.getAllMembers(pageable);
         return sendOkResponse(members);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Member> getMemberById(@PathVariable Long id) {
-        log.info("Request to get member with id: {}", id);
         Member member = memberService.getMemberById(id);
         return sendOkResponse(member);
     }
 
     @PostMapping
     public ResponseEntity<Member> createMember(@RequestBody MemberDTO memberDTO) {
-        log.info("Request to create member");
         Member created = memberService.createMember(memberDTO);
         return sendCreatedResponse(created);
     }
@@ -46,14 +42,12 @@ public class MemberController extends AbstractController {
     public ResponseEntity<Member> updateMember(
             @PathVariable Long id,
             @RequestBody MemberDTO memberDTO) {
-        log.info("Request to update member with id: {}", id);
         Member updated = memberService.updateMember(id, memberDTO);
         return sendOkResponse(updated);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMember(@PathVariable Long id) {
-        log.info("Request to delete member with id: {}", id);
         memberService.deleteMember(id);
         return sendNoContentResponse();
     }

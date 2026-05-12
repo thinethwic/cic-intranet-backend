@@ -54,7 +54,9 @@ public class AuthServiceImpl implements AuthService {
                     user.getName(),
                     user.getEmail(),
                     user.getUsername(),
-                    user.getRole().name()
+                    user.getRole().name(),
+                    user.getSegment(),      // ← add
+                    user.getDepartment()    // ← add
             );
         } catch (IntranetException e) {
             throw e;

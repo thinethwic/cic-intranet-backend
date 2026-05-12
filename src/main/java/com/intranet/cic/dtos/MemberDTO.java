@@ -42,5 +42,7 @@ public class MemberDTO {
 
     private LocalDate joinedDate;
 
+    private String imgeURL;
+
     private Long user;
 }

@@ -48,6 +48,9 @@ public class Member {
     @Column(name = "joined_date")
     private LocalDate joinedDate;
 
+    @Column(name = "imgeURL")
+    private String imgeURL;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)  // ← removed nullable = true
     private User user;

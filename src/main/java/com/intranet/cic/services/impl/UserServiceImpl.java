@@ -9,6 +9,7 @@ import com.intranet.cic.services.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -99,9 +100,19 @@ public class UserServiceImpl implements UserService {
                     .orElseThrow(() -> new IntranetException("User not found", HttpStatus.NOT_FOUND));
 
             userRepository.delete(user);
+
         } catch (IntranetException intranetException) {
             log.warn("User not found with id: {} to delete", id, intranetException);
-            throw intranetException;                          // ✅ re-throw original
+            throw intranetException;
+
+        } catch (DataIntegrityViolationException e) {
+            log.warn("Cannot delete user id: {} — still referenced by other records", id, e);
+            throw new IntranetException(
+                    "Cannot delete this user because they have associated records (documents, logs, or tickets). " +
+                            "Please remove those first before deleting the user.",
+                    HttpStatus.CONFLICT
+            );
+
         } catch (Exception exception) {
             log.error("Error deleting user", exception);
             throw new IntranetException("Failed to delete user", HttpStatus.INTERNAL_SERVER_ERROR);
