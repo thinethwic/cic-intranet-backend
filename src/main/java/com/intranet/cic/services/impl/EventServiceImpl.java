@@ -73,24 +73,22 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public Event updateEventById(Long id, EventDTO eventUpdateDTO) {
-        try{
+        try {
             Event event = eventRepository.findById(id)
-                    .orElseThrow(()-> new IntranetException("Event Not found", HttpStatus.NOT_FOUND)
-                    );
+                    .orElseThrow(() -> new IntranetException("Event Not found", HttpStatus.NOT_FOUND));
+
             User user = userRepository.findById(eventUpdateDTO.getUserId())
                     .orElseThrow(() -> new IntranetException("User Not found", HttpStatus.NOT_FOUND));
 
-            modelMapper.map(eventUpdateDTO, Event.class);
+            modelMapper.map(eventUpdateDTO, event);  // ← map INTO existing event, not new object
             event.setUser(user);
 
             return eventRepository.save(event);
-        }  catch (IntranetException intranetException) {
 
+        } catch (IntranetException intranetException) {
             log.warn("Event not found with id: {} to fetch", id, intranetException);
             throw new IntranetException("Event Not found", HttpStatus.NOT_FOUND);
-
         } catch (Exception exception) {
-
             log.error("Error updating Event", exception);
             throw new IntranetException("Failed to update Event", HttpStatus.INTERNAL_SERVER_ERROR);
         }
