@@ -82,4 +82,8 @@ public class User {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnoreProperties("user")  // prevents infinite recursion in JSON serialization
     private List<Member> members = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"user"})   // ← add this, same pattern as your other lists
+    private List<Alert> alerts = new ArrayList<>();
 }
