@@ -1,5 +1,9 @@
 package com.intranet.cic.services.impl;
 
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
 import com.intranet.cic.entities.types.FileType;
 import com.intranet.cic.execeptions.IntranetException;
 import com.intranet.cic.services.FileStorageService;
@@ -20,17 +24,19 @@ import java.util.UUID;
 @Service
 @Slf4j
 public class FileStorageServiceImpl implements FileStorageService {
-    @Value("${file.upload-dir.documents}")
-    private String documentUploadDir;
 
-    @Value("${file.upload-dir.images}")
-    private String imageUploadDir;
+    @Value("${gcs.bucket-name}")
+    private String bucketName;
 
-    // ── Allowed extensions ─────────────────────────────────────────────────────
+    private final Storage storage;
+
+    public FileStorageServiceImpl(Storage storage) {
+        this.storage = storage;
+    }
+
     private static final List<String> ALLOWED_DOCUMENT_TYPES = List.of(
             "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv"
     );
-
     private static final List<String> ALLOWED_IMAGE_TYPES = List.of(
             "jpg", "jpeg", "png", "gif", "webp", "svg"
     );
@@ -39,29 +45,30 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     public String storeDocument(MultipartFile file) {
         validateExtension(file, ALLOWED_DOCUMENT_TYPES, "document");
-        return store(file, documentUploadDir, "/uploads/documents/");
+        return store(file, "documents/");
     }
 
     public String storeImage(MultipartFile file) {
         validateExtension(file, ALLOWED_IMAGE_TYPES, "image");
-        return store(file, imageUploadDir, "/uploads/images/");
+        return store(file, "images/");
     }
 
-    private String store(MultipartFile file, String uploadDir, String urlPrefix) {
+    private String store(MultipartFile file, String folder) {
         try {
-            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Path uploadPath = Paths.get(uploadDir);
+            String fileName = folder + UUID.randomUUID() + "_" + file.getOriginalFilename();
 
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
+            BlobId blobId = BlobId.of(bucketName, fileName);
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                    .setContentType(file.getContentType())
+                    .build();
 
-            Path filePath = uploadPath.resolve(fileName);
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            storage.create(blobInfo, file.getBytes());
 
-            return urlPrefix + fileName;    // URL saved to DB
+            // Return the public URL
+            return "https://storage.googleapis.com/" + bucketName + "/" + fileName;
+
         } catch (IOException e) {
-            log.error("Failed to store file", e);
+            log.error("Failed to store file in GCS", e);
             throw new IntranetException("Failed to store file", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -69,26 +76,40 @@ public class FileStorageServiceImpl implements FileStorageService {
     // ── Delete ─────────────────────────────────────────────────────────────────
 
     public void deleteFile(String fileUrl) {
-        try {
-            Path filePath = resolveFilePath(fileUrl);
-            Files.deleteIfExists(filePath);
-        } catch (IOException e) {
-            log.error("Failed to delete file: {}", fileUrl, e);
-            throw new IntranetException("Failed to delete file", HttpStatus.INTERNAL_SERVER_ERROR);
+        String prefix = "https://storage.googleapis.com/" + bucketName + "/";
+        String blobName = fileUrl.replace(prefix, "");
+
+        BlobId blobId = BlobId.of(bucketName, blobName);
+        boolean deleted = storage.delete(blobId);
+
+        if (!deleted) {
+            log.warn("File not found in GCS for deletion: {}", fileUrl);
         }
     }
 
-    // ── Download ───────────────────────────────────────────────────────────────
+    // ── Download / Resolve ─────────────────────────────────────────────────────
 
     public Path resolveFilePath(String fileUrl) {
-        if (fileUrl.contains("/uploads/documents/")) {
-            String fileName = fileUrl.replace("/uploads/documents/", "");
-            return Paths.get(documentUploadDir).resolve(fileName).normalize();
-        } else if (fileUrl.contains("/uploads/images/")) {
-            String fileName = fileUrl.replace("/uploads/images/", "");
-            return Paths.get(imageUploadDir).resolve(fileName).normalize();
+        try {
+            String prefix = "https://storage.googleapis.com/" + bucketName + "/";
+            String blobName = fileUrl.replace(prefix, "");
+
+            Blob blob = storage.get(BlobId.of(bucketName, blobName));
+            if (blob == null) {
+                throw new IntranetException("File not found", HttpStatus.NOT_FOUND);
+            }
+
+            // Download to a temp file and return its path
+            String extension = blobName.substring(blobName.lastIndexOf('.'));
+            Path tempFile = Files.createTempFile("gcs-download-", extension);
+            blob.downloadTo(tempFile);
+
+            return tempFile;
+
+        } catch (IOException e) {
+            log.error("Failed to resolve file from GCS", e);
+            throw new IntranetException("Failed to download file", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        throw new IntranetException("Unknown file URL format", HttpStatus.BAD_REQUEST);
     }
 
     // ── Validation ─────────────────────────────────────────────────────────────
@@ -98,8 +119,8 @@ public class FileStorageServiceImpl implements FileStorageService {
         if (originalFilename == null || !originalFilename.contains(".")) {
             throw new IntranetException("Invalid file name", HttpStatus.BAD_REQUEST);
         }
-
-        String extension = originalFilename.substring(originalFilename.lastIndexOf('.') + 1).toLowerCase();
+        String extension = originalFilename
+                .substring(originalFilename.lastIndexOf('.') + 1).toLowerCase();
         if (!allowedTypes.contains(extension)) {
             throw new IntranetException(
                     "Invalid " + fileCategory + " type. Allowed: " + allowedTypes,
