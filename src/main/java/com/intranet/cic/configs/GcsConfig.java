@@ -10,19 +10,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 @Configuration
 public class GcsConfig {
 
+    @Value("${gcs.credentials-path}")
+    private String credentialsPath;
 
     @Bean
     public Storage googleCloudStorage() throws IOException {
-        String credentialsJson = System.getenv("GCS_CREDENTIALS_JSON");
-
         GoogleCredentials credentials = GoogleCredentials
-                .fromStream(new ByteArrayInputStream(credentialsJson.getBytes()))
+                .fromStream(new ClassPathResource("gcs-credentials.json").getInputStream())
                 .createScoped(StorageScopes.CLOUD_PLATFORM);
 
         return StorageOptions.newBuilder()
