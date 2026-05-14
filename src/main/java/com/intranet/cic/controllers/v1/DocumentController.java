@@ -26,9 +26,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.file.Path;
+
 
 @RestController
 @RequestMapping(path = "/api/v1/documents")
@@ -116,11 +115,11 @@ public class DocumentController extends AbstractController {
         Resource resource = resolveResource(document.getFileUrl());
         logAccess(document, authentication, DocumentAccessLog.AccessAction.DOWNLOAD, request);
 
-        String contentType = resolveContentType(request, resource);
+        String contentType = resolveContentType(document.getFileUrl());
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + resource.getFilename() + "\"")
+                        "attachment; filename=\"" + extractFileName(document.getFileUrl()) + "\"")
                 .body(resource);
     }
 
@@ -152,20 +151,21 @@ public class DocumentController extends AbstractController {
         Resource resource = resolveResource(document.getFileUrl());
         logAccess(document, authentication, DocumentAccessLog.AccessAction.VIEW, request);
 
-        String contentType = resolveContentType(request, resource);
+        String contentType = resolveContentType(document.getFileUrl());
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" + resource.getFilename() + "\"")
+                        "inline; filename=\"" + extractFileName(document.getFileUrl()) + "\"")
                 .body(resource);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
+
     private Resource resolveResource(String fileUrl) {
-        Path filePath = fileStorageService.resolveFilePath(fileUrl);
         try {
-            Resource resource = new UrlResource(filePath.toUri());
+            // ✅ Directly use the GCS public URL as a Resource
+            Resource resource = new UrlResource(fileUrl);
             if (!resource.exists()) {
                 throw new IntranetException("File not found", HttpStatus.NOT_FOUND);
             }
@@ -175,13 +175,24 @@ public class DocumentController extends AbstractController {
         }
     }
 
-    private String resolveContentType(HttpServletRequest request, Resource resource) {
-        try {
-            return request.getServletContext()
-                    .getMimeType(resource.getFile().getAbsolutePath());
-        } catch (IOException e) {
-            return "application/octet-stream";
-        }
+    private String resolveContentType(String fileUrl) {
+        // ✅ Derive content type from file extension — no local file needed
+        String lower = fileUrl.toLowerCase();
+        if (lower.endsWith(".pdf"))  return "application/pdf";
+        if (lower.endsWith(".doc"))  return "application/msword";
+        if (lower.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        if (lower.endsWith(".xls"))  return "application/vnd.ms-excel";
+        if (lower.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (lower.endsWith(".ppt"))  return "application/vnd.ms-powerpoint";
+        if (lower.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        if (lower.endsWith(".txt"))  return "text/plain";
+        if (lower.endsWith(".csv"))  return "text/csv";
+        if (lower.endsWith(".png"))  return "image/png";
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".gif"))  return "image/gif";
+        if (lower.endsWith(".webp")) return "image/webp";
+        if (lower.endsWith(".svg"))  return "image/svg+xml";
+        return "application/octet-stream"; // fallback
     }
 
     private void logAccess(Document document, Authentication authentication,
@@ -201,5 +212,10 @@ public class DocumentController extends AbstractController {
             // ✅ Never fail the request if logging fails
             log.warn("Failed to log document access for doc id: {}", document.getId(), e);
         }
+    }
+
+    private String extractFileName(String fileUrl) {
+        // GCS URL: https://storage.googleapis.com/bucket/documents/uuid_filename.pdf
+        return fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
     }
 }
