@@ -12,6 +12,7 @@ import com.intranet.cic.execeptions.IntranetException;
 import com.intranet.cic.repositories.TicketCommentRepository;
 import com.intranet.cic.repositories.TicketRepository;
 import com.intranet.cic.repositories.UserRepository;
+import com.intranet.cic.services.EmailService;
 import com.intranet.cic.services.TicketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class TicketServiceImpl implements TicketService {
     private final TicketCommentRepository ticketCommentRepository;
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
+    private final EmailService emailService;
 
 
     private User getCurrentUser() {
@@ -96,7 +98,21 @@ public class TicketServiceImpl implements TicketService {
             ticket.setAssignedTo(null);
             ticket.setResolvedAt(null);
 
-            return modelMapper.map(ticketRepository.save(ticket), TicketDTO.class);
+            Ticket saved = ticketRepository.save(ticket);
+
+            // ✅ Notify super admin — runs async, won't slow down the response
+            emailService.sendNewTicketNotification(
+                    saved.getTicketNumber(),
+                    saved.getTitle(),
+                    saved.getDescription(),
+                    saved.getPriority().name(),
+                    saved.getSegment() != null ? saved.getSegment().name() : "N/A",
+                    saved.getDepartment(),
+                    currentUser.getName(),
+                    currentUser.getEmail()
+            );
+
+            return modelMapper.map(saved, TicketDTO.class);
         } catch (IntranetException e) {
             throw e;
         } catch (Exception e) {
