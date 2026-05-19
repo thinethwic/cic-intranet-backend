@@ -55,7 +55,7 @@ public class SecurityConfig {
                                 "/api/v1/images", "/api/v1/documents",
                                 "/api/v1/documents/*/view", "/api/v1/documents/*/download",
                                 "/api/v1/news", "/api/v1/news/*", "/api/v1/news/*/image","/api/v1/alerts","/api/v1/announcements","/uploads/images/**",
-                                "/uploads/documents/**"
+                                "/uploads/documents/**","/api/v1/audit-logs"
                         ).permitAll()
 
                         // Departments — authenticated; @PreAuthorize handles role checks
@@ -75,6 +75,8 @@ public class SecurityConfig {
 
                         // Ticket endpoints — authenticated
                         .requestMatchers("/api/tickets/**").authenticated()
+
+                        .requestMatchers("/api/v1/audit-logs/**").authenticated()
 
                         .requestMatchers(HttpMethod.GET, "/api/v1/alerts/all").authenticated()
 
