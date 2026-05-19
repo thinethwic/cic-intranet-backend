@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.Year;
+//import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +39,9 @@ public class TicketServiceImpl implements TicketService {
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final EmailService emailService;
+
+//    @Value("${app.superuser.email}")
+//    private String superUserEmail;
 
 
     private User getCurrentUser() {
@@ -56,11 +60,25 @@ public class TicketServiceImpl implements TicketService {
         }
     }
 
-    private String generateTicketNumber() {
+    private String generateTicketNumber(String departmentCode) {
         try {
             int year = Year.now().getValue();
-            long next = ticketRepository.findMaxSequenceForYear(year) + 1;
-            return String.format("TKT-%d-%03d", year, next);
+            String prefix = (departmentCode == null || departmentCode.isBlank())
+                    ? "GEN"
+                    : departmentCode.toUpperCase().trim();
+
+            // ✅ Use count-based approach instead of max sequence
+            long count = ticketRepository.countByTicketNumberStartingWith(prefix + "-" + year);
+            long next = count + 1;
+
+            // ✅ Guard against collision — keep incrementing until unique
+            String ticketNumber;
+            do {
+                ticketNumber = String.format("%s-%d-%03d", prefix, year, next);
+                next++;
+            } while (ticketRepository.existsByTicketNumber(ticketNumber));
+
+            return ticketNumber;
         } catch (Exception e) {
             log.error("Failed to generate ticket number", e);
             throw new IntranetException("Failed to generate ticket number", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -92,7 +110,7 @@ public class TicketServiceImpl implements TicketService {
 
             Ticket ticket = modelMapper.map(ticketDTO, Ticket.class);
             ticket.setId(null);
-            ticket.setTicketNumber(generateTicketNumber());
+            ticket.setTicketNumber(generateTicketNumber(ticketDTO.getDepartment()));
             ticket.setStatus(TicketStatus.OPEN);
             ticket.setSubmittedBy(currentUser);
             ticket.setAssignedTo(null);
@@ -100,7 +118,25 @@ public class TicketServiceImpl implements TicketService {
 
             Ticket saved = ticketRepository.save(ticket);
 
-            // ✅ Notify super admin — runs async, won't slow down the response
+
+//// Find active admins for this segment + department
+//            List<String> adminEmails = userRepository
+//                    .findActiveAdminsBySegmentAndDepartment(saved.getSegment(), saved.getDepartment())
+//                    .stream()
+//                    .map(User::getEmail)
+//                    .filter(e -> e != null && !e.isBlank())
+//                    .collect(Collectors.toList());
+//
+//
+//            if (adminEmails.isEmpty()) {
+//                log.warn("No admin found for segment={}, department={} — falling back to superuser",
+//                        saved.getSegment(), saved.getDepartment());
+//                adminEmails = Arrays.stream(superUserEmail.split(","))
+//                        .map(String::trim)
+//                        .filter(e -> !e.isBlank())
+//                        .collect(Collectors.toList());
+//            }
+
             emailService.sendNewTicketNotification(
                     saved.getTicketNumber(),
                     saved.getTitle(),
@@ -108,8 +144,10 @@ public class TicketServiceImpl implements TicketService {
                     saved.getPriority().name(),
                     saved.getSegment() != null ? saved.getSegment().name() : "N/A",
                     saved.getDepartment(),
+                    saved.getCreatedAt(),
                     currentUser.getName(),
                     currentUser.getEmail()
+//                    adminEmails
             );
 
             return modelMapper.map(saved, TicketDTO.class);
@@ -345,30 +383,80 @@ public class TicketServiceImpl implements TicketService {
         }
     }
 
-    @Override
-    public Page<Ticket> getTicketsByCurrentAdminSegment(Pageable pageable) {
+    /**
+     * Ticket visibility routing for ADMIN role.
+     *
+     * Two rules depending on the admin's department:
+     *
+     *   1. IT admin  (department = "IT", any segment)
+     *      → returns ALL tickets whose category = 'IT', across every segment.
+     *        The IT function is centralised; IT admins are not segment-scoped.
+     *
+     *   2. Non-IT admin  (HR, Finance, Facilities, Other…)
+     *      → returns tickets where BOTH segment AND department match the
+     *        admin's own segment and department.
+     *
+     * SUPER_ADMIN does not call this method — they use getAllTickets().
+     */
+    @Transactional(readOnly = true)
+    public Page<Ticket> getTicketsByCurrentAdminScope(Pageable pageable) {
         try {
-            String principal = SecurityContextHolder.getContext().getAuthentication().getName();
+            String principal = SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getName();
 
             User admin = userRepository.findByUsername(principal)
-                    .orElseThrow(() -> new IntranetException("Admin user not found", HttpStatus.UNAUTHORIZED));
+                    .orElseThrow(() -> new IntranetException(
+                            "Admin user not found",
+                            HttpStatus.UNAUTHORIZED));
 
-            Segment segment = admin.getSegment();
+            String department = admin.getDepartment();
+            Segment segment   = admin.getSegment();
+
+            // ── Rule 1: IT admin — cross-segment, category-scoped ──────────
+            if (department != null
+                    && department.trim().equalsIgnoreCase("IT")) {
+                log.debug("IT admin {} — returning IT-category tickets from all segments",
+                        principal);
+                return ticketRepository.findByCategory("IT", pageable);
+            }
+
+            // ── Rule 2: Non-IT admin — segment + department scoped ─────────
             if (segment == null) {
+                log.warn("Admin {} has no segment set — returning empty page", principal);
                 return Page.empty(pageable);
             }
 
-            String department = admin.getDepartment();
             if (department != null && !department.isBlank()) {
-                return ticketRepository.findBySegmentAndDepartment(segment, department, pageable);
+                log.debug("Admin {} — returning tickets for segment={}, department={}",
+                        principal, segment, department);
+                return ticketRepository
+                        .findBySegmentAndDepartmentIgnoreCase(segment, department, pageable);
             }
 
+            // Fallback: segment only (no department set on admin)
+            log.debug("Admin {} — no department set, returning all tickets for segment={}",
+                    principal, segment);
             return ticketRepository.findBySegment(segment, pageable);
+
         } catch (IntranetException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Failed to fetch tickets by admin segment", e);
-            throw new IntranetException("Failed to fetch tickets by segment", HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Failed to fetch tickets by admin scope", e);
+            throw new IntranetException(
+                    "Failed to fetch tickets by scope",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * @deprecated Replaced by {@link #getTicketsByCurrentAdminScope(Pageable)}.
+     * Kept for backwards compatibility; delegates to the new method.
+     */
+    @Override
+    @Deprecated
+    @Transactional(readOnly = true)
+    public Page<Ticket> getTicketsByCurrentAdminSegment(Pageable pageable) {
+        return getTicketsByCurrentAdminScope(pageable);
     }
 }

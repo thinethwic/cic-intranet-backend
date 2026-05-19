@@ -1,5 +1,6 @@
 package com.intranet.cic.security;
 
+import com.intranet.cic.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -21,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuthenticationFilter extends OncePerRequestFilter {
     private final TokenValidator tokenValidator;
+    private final UserRepository userRepository; // ✅ inject
 
     @Override
     protected void doFilterInternal(@Nonnull HttpServletRequest request,
@@ -30,7 +32,6 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
         String token = extractToken(request);
 
-
         if (token != null && tokenValidator.validateToken(token)) {
             String username   = tokenValidator.extractUsername(token);
             String email      = tokenValidator.extractEmail(token);
@@ -38,13 +39,25 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             String location   = tokenValidator.extractLocation(token);
             String department = tokenValidator.extractDepartment(token);
 
+            // ✅ Block inactive users — reject even with a valid token
+            String lookupName = username != null ? username : email;
+            boolean isActive = userRepository.findActiveByUsername(lookupName)
+                    .orElse(false);
+
+            if (!isActive) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"message\": \"Account is disabled\"}");
+                return; // ← stop filter chain, don't authenticate
+            }
+
             List<GrantedAuthority> authorities = new ArrayList<>();
             if (role != null) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
             }
 
             var principal = new org.springframework.security.core.userdetails.User(
-                    username != null ? username : email,
+                    lookupName,
                     "",
                     authorities
             );
@@ -52,7 +65,6 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
-            // ── Store token claims as details so controllers can access them ──
             authentication.setDetails(java.util.Map.of(
                     "location",   location   != null ? location   : "",
                     "department", department != null ? department : "",

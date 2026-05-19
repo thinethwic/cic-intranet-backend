@@ -44,6 +44,12 @@ public class AuthServiceImpl implements AuthService {
                 throw new IntranetException("Invalid email or password", HttpStatus.UNAUTHORIZED);
             }
 
+            // ✅ Block inactive users from getting a token
+            if (!user.getActive()) {
+                log.warn("Inactive user attempted login: {}", loginDTO.getEmail());
+                throw new IntranetException("Your account has been disabled. Please contact an administrator.", HttpStatus.UNAUTHORIZED);
+            }
+
             String token = generateToken(user);
 
             log.info("User logged in successfully: {}", user.getEmail());
@@ -55,8 +61,8 @@ public class AuthServiceImpl implements AuthService {
                     user.getEmail(),
                     user.getUsername(),
                     user.getRole().name(),
-                    user.getSegment(),      // ← add
-                    user.getDepartment()    // ← add
+                    user.getSegment(),
+                    user.getDepartment()
             );
         } catch (IntranetException e) {
             throw e;

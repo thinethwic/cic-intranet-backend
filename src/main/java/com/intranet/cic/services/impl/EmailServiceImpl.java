@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 
 @Service
@@ -30,7 +32,8 @@ public class EmailServiceImpl implements EmailService {
     @Async
     public void sendNewTicketNotification(String ticketNumber, String title,
                                           String description, String priority,
-                                          String segment, String department, String submittedBy,String email) {
+                                          String segment, String department, LocalDateTime createdAt,String submittedBy,String email
+                                          ) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -43,7 +46,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setTo(recipients);
             helper.setSubject("New Support Ticket: " + ticketNumber);
             helper.setText(buildEmailBody(ticketNumber, title, description,
-                    priority, segment, department,submittedBy,email), true);
+                    priority, segment, department,createdAt,submittedBy,email), true);
 
             mailSender.send(message);
             log.info("Ticket notification sent for {} to {} recipients", ticketNumber, recipients.length);
@@ -51,37 +54,100 @@ public class EmailServiceImpl implements EmailService {
             log.error("Failed to send ticket notification for {}: {}", ticketNumber, e.getMessage());
         }
     }
+// Custom Email Section
+//    @Async
+//    public void sendNewTicketNotification(String ticketNumber, String title,
+//                                          String description, String priority,
+//                                          String segment, String department,
+//                                          LocalDateTime createdAt, String submittedBy,
+//                                          String email, List<String> recipientEmails) {
+//        try {
+//            if (recipientEmails == null || recipientEmails.isEmpty()) {
+//                log.warn("No recipients found for ticket {}, skipping notification", ticketNumber);
+//                return;
+//            }
+//
+//            MimeMessage message = mailSender.createMimeMessage();
+//            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+//
+//            String[] recipients = recipientEmails.stream()
+//                    .filter(e -> e != null && !e.isBlank())
+//                    .toArray(String[]::new);
+//
+//            if (recipients.length == 0) {
+//                log.warn("All recipient emails were blank for ticket {}", ticketNumber);
+//                return;
+//            }
+//
+//            helper.setTo(recipients);
+//            helper.setSubject("New Support Ticket: " + ticketNumber);
+//            helper.setText(buildEmailBody(ticketNumber, title, description,
+//                    priority, segment, department, createdAt, submittedBy, email), true);
+//
+//            mailSender.send(message);
+//            log.info("Ticket notification sent for {} to: {}", ticketNumber, recipientEmails);
+//        } catch (MessagingException e) {
+//            log.error("Failed to send ticket notification for {}: {}", ticketNumber, e.getMessage());
+//        }
+//    }
+
+    private String tableRow(String label, String value) {
+        return "<tr>"
+                + "<td style=\"padding:10px 14px;border:1px solid #d1d5db;width:220px;vertical-align:top;"
+                + "font-weight:600;color:#374151;background:#f9fafb;white-space:nowrap;\">" + label + "</td>"
+                + "<td style=\"padding:10px 14px;border:1px solid #d1d5db;color:#1e293b;vertical-align:top;"
+                + "word-break:break-word;\">" + value + "</td>"
+                + "</tr>";
+    }
 
     private String buildEmailBody(String ticketNumber, String title,
                                   String description, String priority,
-                                  String segment, String department, String submittedBy, String email) {
-        return "<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:auto;\">"
-                + "<div style=\"background:#1e3a5f;padding:24px;border-radius:12px 12px 0 0;\">"
-                + "<h2 style=\"color:white;margin:0;\">New Support Ticket</h2>"
-                + "<p style=\"color:#93c5fd;margin:4px 0 0;\">A new ticket has been submitted</p>"
-                + "</div>"
-                + "<div style=\"border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px;\">"
-                + "<table style=\"width:100%;border-collapse:collapse;\">"
-                + "<tr><td style=\"padding:8px 0;color:#64748b;width:130px;\">Ticket #</td>"
-                + "    <td style=\"padding:8px 0;font-weight:bold;\">" + ticketNumber + "</td></tr>"
-                + "<tr><td style=\"padding:8px 0;color:#64748b;\">Title</td>"
-                + "    <td style=\"padding:8px 0;\">" + title + "</td></tr>"
-                + "<tr><td style=\"padding:8px 0;color:#64748b;\">Priority</td>"
-                + "    <td style=\"padding:8px 0;\">" + priority + "</td></tr>"
-                + "<tr><td style=\"padding:8px 0;color:#64748b;\">Location</td>"
-                + "    <td style=\"padding:8px 0;\">" + segment + "</td></tr>"
-                + "<tr><td style=\"padding:8px 0;color:#64748b;\">Department</td>"
-                + "    <td style=\"padding:8px 0;\">" + department + "</td></tr>"
-                + "<tr><td style=\"padding:8px 0;color:#64748b;\">Submitted By</td>"
-                + "    <td style=\"padding:8px 0;\">" + submittedBy + "</td></tr>"
-                + "<tr><td style=\"padding:8px 0;color:#64748b;\">Submitted By Email</td>"
-                + "    <td style=\"padding:8px 0;\">" + email + "</td></tr>"
+                                  String segment, String department,
+                                  LocalDateTime createdAt, String submittedBy, String email) {
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy hh:mm a");
+        String formattedDate = createdAt.format(formatter);
+
+        // preserve line breaks in description
+        String formattedDescription = description
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\n", "<br/>");
+
+        return "<div style=\"font-family:Arial,sans-serif;max-width:700px;margin:0;color:#333;\">"
+
+                // ── Intro ──
+                + "<p style=\"font-size:14px;color:#333;margin:0 0 20px 0;line-height:1.6;\">"
+                + "A support case has been opened for you. We will review the details provided and get back to you as soon as possible."
+                + "</p>"
+
+                // ── Table ──
+                + "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;"
+                + "border:1px solid #d1d5db;\">"
+
+                + tableRow("Ticket ID",          ticketNumber)
+                + tableRow("Created Date",       formattedDate)
+                + tableRow("Request Subject",    title)
+                + tableRow("Requester",          submittedBy)
+                + tableRow("Email",              email)
+                + tableRow("Site / Segment",     segment)
+                + tableRow("Department",         department)
+                + tableRow("Priority",           priority)
+
+                // ── Description row (longer content) ──
+                + "<tr>"
+                + "<td style=\"padding:10px 14px;border:1px solid #d1d5db;width:220px;vertical-align:top;"
+                + "font-weight:600;color:#374151;background:#f9fafb;white-space:nowrap;\">Request Description</td>"
+                + "<td style=\"padding:10px 14px;border:1px solid #d1d5db;color:#1e293b;vertical-align:top;"
+                + "word-break:break-word;line-height:1.7;min-width:0;\">"
+                + formattedDescription
+                + "</td>"
+                + "</tr>"
+
                 + "</table>"
-                + "<div style=\"margin-top:16px;background:#f8fafc;padding:16px;border-radius:8px;\">"
-                + "<p style=\"color:#64748b;margin:0 0 8px;font-size:12px;text-transform:uppercase;\">Description</p>"
-                + "<p style=\"margin:0;color:#1e293b;\">" + description + "</p>"
-                + "</div>"
-                // ✅ View Ticket button
+
+                // ── View Ticket Button ──
                 + "<div style=\"margin-top:24px;text-align:center;\">"
                 + "<a href=\"" + ticketUrl + "\" "
                 + "style=\"display:inline-block;background:#1e3a5f;color:white;text-decoration:none;"
@@ -89,10 +155,11 @@ public class EmailServiceImpl implements EmailService {
                 + "View Ticket &rarr;"
                 + "</a>"
                 + "</div>"
-                + "<p style=\"margin-top:16px;font-size:12px;color:#94a3b8;text-align:center;\">"
+
+                + "<p style=\"margin-top:16px;font-size:12px;color:#94a3b8;text-align:left;\">"
                 + "Or copy this link: <a href=\"" + ticketUrl + "\" style=\"color:#3b82f6;\">" + ticketUrl + "</a>"
                 + "</p>"
-                + "</div>"
+
                 + "</div>";
     }
 }

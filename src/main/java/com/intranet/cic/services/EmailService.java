@@ -1,7 +1,12 @@
 package com.intranet.cic.services;
 
+import java.time.LocalDateTime;
+//import java.util.List;
+
 public interface EmailService {
     void sendNewTicketNotification(String ticketNumber, String title,
                                    String description, String priority,
-                                   String segment, String department, String submittedBy, String email) ;
+                                   String segment, String department,
+                                   LocalDateTime createdAt, String submittedBy,
+                                   String email); //List<String> recipientEmails);
 }

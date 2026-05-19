@@ -12,9 +12,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface TicketRepository extends JpaRepository<Ticket,Long> {
-    @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(t.ticketNumber, 10) AS int)), 0) " +
-            "FROM Ticket t WHERE t.ticketNumber LIKE CONCAT('TKT-', :year, '-%')")
-    long findMaxSequenceForYear(@Param("year") int year);
+
+    long countByTicketNumberStartingWith(String prefix);
+    boolean existsByTicketNumber(String ticketNumber);
+
+
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE YEAR(t.createdAt) = :year AND ((:dept IS NULL AND t.department IS NULL) OR t.department = :dept)")
+    long findMaxSequenceForYearAndDepartment(@Param("year") int year, @Param("dept") String dept);
 
 
     Page<Ticket> findBySubmittedBy(User submittedBy, Pageable pageable);
@@ -23,6 +27,28 @@ public interface TicketRepository extends JpaRepository<Ticket,Long> {
 
     Page<Ticket> findBySegment(Segment segment, Pageable pageable);
 
-    Page<Ticket> findBySegmentAndDepartment(Segment segment, String department, Pageable pageable);
+    /**
+     * IT Admin routing — cross-segment.
+     *
+     * Returns every ticket whose category matches 'IT' (case-insensitive),
+     * regardless of which segment raised it.  Used when the logged-in admin
+     * has department = "IT"; the IT function is centralised so IT admins
+     * are not scoped to a single segment.
+     */
+    @Query("SELECT t FROM Ticket t WHERE UPPER(t.category) = UPPER(:category)")
+    Page<Ticket> findByCategory(@Param("category") String category, Pageable pageable);
+
+    /**
+     * Non-IT Admin routing — segment AND department scoped.
+     *
+     * Returns tickets where both segment and department match the admin's
+     * own segment and department.  Used for HR, Finance, Facilities, etc.
+     * admins who are confined to their own business unit.
+     */
+    @Query("SELECT t FROM Ticket t WHERE t.segment = :segment " +
+            "AND LOWER(t.department) = LOWER(:department)")
+    Page<Ticket> findBySegmentAndDepartmentIgnoreCase(@Param("segment") Segment segment,
+                                                      @Param("department") String department,
+                                                      Pageable pageable);
 
 }

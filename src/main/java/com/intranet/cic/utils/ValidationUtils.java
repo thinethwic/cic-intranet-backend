@@ -27,9 +27,17 @@ public class ValidationUtils {
      * @param excludeId the id of the record being updated, or null on create
      */
     public void validateCategoryUniqueName(String name, String segment, Long excludeId) {
-        boolean taken = excludeId == null
-                ? ticketCategoryRepository.existsByNameIgnoreCaseAndSegment(name, segment)
-                : ticketCategoryRepository.existsByNameIgnoreCaseAndSegmentAndIdNot(name, segment, excludeId);
+        boolean taken;
+
+        if (segment == null) {
+            taken = excludeId == null
+                    ? ticketCategoryRepository.existsByNameIgnoreCaseAndSegmentIsNull(name)
+                    : ticketCategoryRepository.existsByNameIgnoreCaseAndSegmentIsNullAndIdNot(name, excludeId);
+        } else {
+            taken = excludeId == null
+                    ? ticketCategoryRepository.existsByNameIgnoreCaseAndSegment(name, segment)
+                    : ticketCategoryRepository.existsByNameIgnoreCaseAndSegmentAndIdNot(name, segment, excludeId);
+        }
 
         if (taken) {
             String scope = segment != null ? "segment '" + segment + "'" : "the global scope";

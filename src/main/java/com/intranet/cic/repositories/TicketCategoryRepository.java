@@ -14,6 +14,11 @@ public interface TicketCategoryRepository extends JpaRepository<TicketCategory, 
 
     boolean existsByNameIgnoreCaseAndSegmentAndIdNot(String name, String segment, Long excludeId);
 
+    // Global category uniqueness (segment IS NULL)
+    boolean existsByNameIgnoreCaseAndSegmentIsNull(String name);
+
+    boolean existsByNameIgnoreCaseAndSegmentIsNullAndIdNot(String name, Long excludeId);
+
     // Used when segment + department both provided
     @Query("""
         SELECT c FROM TicketCategory c

@@ -86,13 +86,12 @@ public class UserServiceImpl implements UserService {
             return userRepository.save(user);
         } catch (IntranetException intranetException) {
             log.warn("User not found with id: {} to update", id, intranetException);
-            throw intranetException;                          // ✅ re-throw original
+            throw intranetException;
         } catch (Exception exception) {
             log.error("Error updating user", exception);
             throw new IntranetException("Failed to update user", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
     @Override
     public void deleteUser(Long id) {
         try {

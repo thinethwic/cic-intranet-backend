@@ -40,7 +40,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         try {
             Pageable pageable = PageRequest.of(
                     page, size,
-                    Sort.by("segment").ascending().and(Sort.by("name").ascending())
+                    Sort.by(Sort.Direction.DESC, "createdAt")
             );
             return departmentRepository.findAll(pageable)
                     .map(this::toResponse);
