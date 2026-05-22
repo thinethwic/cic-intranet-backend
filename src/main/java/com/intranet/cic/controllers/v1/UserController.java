@@ -23,10 +23,10 @@ public class UserController extends AbstractController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<Page<User>> getAllUsers(
+    public ResponseEntity<Page<UserDTO>> getAllUsers(
             @PageableDefault(size = 10, sort = "id") Pageable pageable
     ) {
-        Page<User> users = userService.getAllUsers(pageable);
+        Page<UserDTO> users = userService.getAllUsers(pageable);
         return sendOkResponse(users);
     }
 

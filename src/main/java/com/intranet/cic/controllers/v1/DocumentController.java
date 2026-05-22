@@ -82,8 +82,9 @@ public class DocumentController extends AbstractController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
         Document document = documentService.getDocumentById(id);
-        fileStorageService.deleteFile(document.getFileUrl());
-        documentService.deleteDocument(id);
+        String fileUrl = document.getFileUrl(); // capture URL before deletion
+        documentService.deleteDocument(id);     // DB first — if this throws, storage is untouched
+        fileStorageService.deleteFile(fileUrl); // storage second — only reached if DB succeeded
         return sendNoContentResponse();
     }
 

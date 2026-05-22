@@ -3,12 +3,13 @@ package com.intranet.cic.services.impl;
 import com.intranet.cic.dtos.TicketCommentDTO;
 import com.intranet.cic.dtos.TicketDTO;
 import com.intranet.cic.entities.Ticket;
+import com.intranet.cic.entities.TicketCategory;
 import com.intranet.cic.entities.TicketComment;
 import com.intranet.cic.entities.User;
 import com.intranet.cic.entities.types.Segment;
-import com.intranet.cic.entities.types.TicketCategory;
 import com.intranet.cic.entities.types.TicketStatus;
 import com.intranet.cic.execeptions.IntranetException;
+import com.intranet.cic.repositories.TicketCategoryRepository;
 import com.intranet.cic.repositories.TicketCommentRepository;
 import com.intranet.cic.repositories.TicketRepository;
 import com.intranet.cic.repositories.UserRepository;
@@ -39,6 +40,7 @@ public class TicketServiceImpl implements TicketService {
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final EmailService emailService;
+    private final TicketCategoryRepository ticketCategoryRepository;
 
 //    @Value("${app.superuser.email}")
 //    private String superUserEmail;
@@ -60,18 +62,35 @@ public class TicketServiceImpl implements TicketService {
         }
     }
 
-    private String generateTicketNumber(String departmentCode) {
+    private String generateTicketNumber(String categoryName, String departmentCode) {
         try {
             int year = Year.now().getValue();
-            String prefix = (departmentCode == null || departmentCode.isBlank())
+
+            String dept = (departmentCode == null || departmentCode.isBlank())
                     ? "GEN"
                     : departmentCode.toUpperCase().trim();
 
-            // ✅ Use count-based approach instead of max sequence
-            long count = ticketRepository.countByTicketNumberStartingWith(prefix + "-" + year);
-            long next = count + 1;
+            // Look up catCode from DB; fall back to dept-only prefix if not found
+            String catCode = null;
+            if (categoryName != null && !categoryName.isBlank()) {
+                catCode = ticketCategoryRepository
+                        .findByNameIgnoreCase(categoryName.trim())
+                        .filter(TicketCategory::isActive)
+                        .map(TicketCategory::getCatCode)
+                        .map(String::toUpperCase)
+                        .orElse(null);
 
-            // ✅ Guard against collision — keep incrementing until unique
+                if (catCode == null) {
+                    log.warn("No active category found for name='{}' — using dept-only prefix", categoryName);
+                }
+            }
+
+            String prefix = (catCode != null) ? catCode + "-" + dept : dept;
+
+            String prefixWithYear = prefix + "-" + year;
+            long count = ticketRepository.countByTicketNumberStartingWith(prefixWithYear);
+            long next  = count + 1;
+
             String ticketNumber;
             do {
                 ticketNumber = String.format("%s-%d-%03d", prefix, year, next);
@@ -79,11 +98,15 @@ public class TicketServiceImpl implements TicketService {
             } while (ticketRepository.existsByTicketNumber(ticketNumber));
 
             return ticketNumber;
+
+        } catch (IntranetException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to generate ticket number", e);
             throw new IntranetException("Failed to generate ticket number", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     private TicketCommentDTO toCommentDTO(TicketComment comment) {
         TicketCommentDTO dto = new TicketCommentDTO();
@@ -110,7 +133,9 @@ public class TicketServiceImpl implements TicketService {
 
             Ticket ticket = modelMapper.map(ticketDTO, Ticket.class);
             ticket.setId(null);
-            ticket.setTicketNumber(generateTicketNumber(ticketDTO.getDepartment()));
+            ticket.setTicketNumber(generateTicketNumber(
+                    ticketDTO.getCategory(),
+                    ticketDTO.getDepartment()));
             ticket.setStatus(TicketStatus.OPEN);
             ticket.setSubmittedBy(currentUser);
             ticket.setAssignedTo(null);
@@ -219,7 +244,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TicketDTO> getTicketsByCategory(Pageable pageable, TicketCategory category) {
+    public Page<TicketDTO> getTicketsByCategory(Pageable pageable, String category) {
         try {
             return ticketRepository.findByCategory(category, pageable)
                     .map(ticket -> modelMapper.map(ticket, TicketDTO.class));

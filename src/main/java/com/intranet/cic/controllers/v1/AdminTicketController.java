@@ -4,7 +4,6 @@ import com.intranet.cic.controllers.AbstractController;
 import com.intranet.cic.dtos.TicketCommentDTO;
 import com.intranet.cic.dtos.TicketDTO;
 import com.intranet.cic.entities.Ticket;
-import com.intranet.cic.entities.types.TicketCategory;
 import com.intranet.cic.entities.types.TicketStatus;
 import com.intranet.cic.services.TicketService;
 import jakarta.validation.Valid;
@@ -12,13 +11,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import static com.intranet.cic.constants.UserRoles.*;
-import static com.intranet.cic.constants.UserRoles.ROLE_SERVICE;
 
 @RestController
 @RequestMapping("/api/admin/tickets")
@@ -54,7 +51,7 @@ public class AdminTicketController extends AbstractController {
     // ─── Filter by category ──────────────────────────────────────
     @GetMapping("/category/{category}")
     public ResponseEntity<Page<TicketDTO>> getByCategory(
-            @PathVariable TicketCategory category,
+            @PathVariable String category,
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
         return sendOkResponse(ticketService.getTicketsByCategory(pageable, category));
     }

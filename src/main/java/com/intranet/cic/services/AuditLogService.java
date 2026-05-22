@@ -36,4 +36,6 @@ public interface AuditLogService {
             String toStr,
             PrintWriter writer
     );
+
+    void scheduledPurge();
 }

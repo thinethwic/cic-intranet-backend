@@ -22,5 +22,7 @@ public interface NewsRepository extends JpaRepository<News, Long> {
     """)
     int demoteHotNewsOlderThan(@Param("cutoff") LocalDateTime cutoff);
 
+    boolean existsByTitle(String title);
+
     Page<News> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface UserService {
-    Page<User> getAllUsers(Pageable pageable);
+    Page<UserDTO> getAllUsers(Pageable pageable);
     User getUserById(Long id);
     User createUser(UserDTO userDTO);
     User updateUser(Long id, UpdateUserDTO userDTO);

@@ -68,6 +68,7 @@ public class TicketCategoryServiceImpl implements TicketCategoryService {
             validationUtils.validateCategoryUniqueName(body.getName(), body.getSegment(), id);
 
             cat.setName(body.getName());
+            cat.setCatCode(body.getCatCode());
             cat.setSegment(body.getSegment());
             cat.setDepartment(body.getDepartment());
             cat.setActive(body.isActive());

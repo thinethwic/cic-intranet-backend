@@ -3,7 +3,10 @@ package com.intranet.cic.services.impl;
 import com.intranet.cic.entities.AuditLog;
 import com.intranet.cic.repositories.AuditLogRepository;
 import com.intranet.cic.services.AuditLogService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +18,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuditLogServiceImpl implements AuditLogService {
 
     private final AuditLogRepository repo;
@@ -84,6 +88,30 @@ public class AuditLogServiceImpl implements AuditLogService {
                 "totalFailed",   repo.countByEventType(AuditLog.EventType.LOGIN_FAILED),
                 "uniqueUsers",   repo.countDistinctUsers()
         );
+    }
+
+    // ── Scheduled auto-purge ───────────────────────────────────────────────
+
+    /**
+     * Runs automatically at 02:00 on the 1st of every month.
+     * Deletes all audit log records older than 1 month.
+     *
+     * Requires @EnableScheduling on your Spring Boot main class:
+     *
+     *   @SpringBootApplication
+     *   @EnableScheduling          ← add this
+     *   public class Application { ... }
+     */
+
+    @Value("${audit.log.retention-hours}")
+    private int retentionHours;
+
+    @Transactional
+    public void scheduledPurge() {
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(retentionHours);
+        int deleted = repo.deleteByCreatedAtBefore(cutoff);
+        log.info("Audit log purge complete. Deleted {} records older than {} hours (cutoff: {}).",
+                deleted, retentionHours, cutoff);
     }
 
     // ── CSV Export ─────────────────────────────────────────────────────────

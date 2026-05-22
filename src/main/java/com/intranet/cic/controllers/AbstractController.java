@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -37,9 +38,15 @@ public class AbstractController {
 
     // common exceptions handling
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(
-            Exception ex) {
-        log.error("Unexpected error: {}" ,ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+
+        // Client disconnected before response was sent — not a server error, ignore it
+        if (isClientAbortException(ex)) {
+            log.debug("Client disconnected before response completed.");
+            return null;
+        }
+
+        log.error("Unexpected error: {}", ex.getMessage());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .message("An unexpected error occurred")
                 .errorCode("INTERNAL SERVER ERROR")
@@ -49,6 +56,23 @@ public class AbstractController {
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    private boolean isClientAbortException(Throwable ex) {
+        Throwable cause = ex;
+        while (cause != null) {
+            if (cause instanceof IOException) {
+                String msg = cause.getMessage();
+                if (msg != null && (
+                        msg.contains("An established connection was aborted") ||
+                                msg.contains("Broken pipe") ||
+                                msg.contains("Connection reset by peer")
+                )) {
+                    return true;
+                }
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
     //    Handles Custom SkillMentor Exceptions
     @ExceptionHandler(IntranetException.class)
     public ResponseEntity<ErrorResponse> handleSkillMentorException(

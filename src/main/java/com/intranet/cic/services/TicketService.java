@@ -3,7 +3,6 @@ package com.intranet.cic.services;
 import com.intranet.cic.dtos.TicketCommentDTO;
 import com.intranet.cic.dtos.TicketDTO;
 import com.intranet.cic.entities.Ticket;
-import com.intranet.cic.entities.types.TicketCategory;
 import com.intranet.cic.entities.types.TicketStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +18,7 @@ public interface TicketService {
     // ─── Admin / Handler ────────────────────────────────────────
     Page<Ticket> getAllTickets(Pageable pageable);          // all tickets, no filter
     Page<TicketDTO> getTicketsByStatus(Pageable pageable, TicketStatus status);
-    Page<TicketDTO> getTicketsByCategory(Pageable pageable, TicketCategory category);
+    Page<TicketDTO> getTicketsByCategory(Pageable pageable, String category);
     TicketDTO assignTicket(Long ticketId, Long userId);
     TicketDTO updateTicketStatus(Long ticketId, TicketStatus newStatus);
 

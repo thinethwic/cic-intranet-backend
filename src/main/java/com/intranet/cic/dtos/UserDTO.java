@@ -8,6 +8,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class UserDTO {
 
@@ -45,4 +47,8 @@ public class UserDTO {
     private Segment segment;
 
     private String department;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 }

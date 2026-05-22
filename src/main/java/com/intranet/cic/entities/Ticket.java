@@ -2,7 +2,6 @@ package com.intranet.cic.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.intranet.cic.entities.types.Segment;
-import com.intranet.cic.entities.types.TicketCategory;
 import com.intranet.cic.entities.types.TicketPriority;
 import com.intranet.cic.entities.types.TicketStatus;
 import jakarta.persistence.*;

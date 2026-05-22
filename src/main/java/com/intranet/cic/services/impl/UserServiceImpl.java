@@ -25,9 +25,10 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public Page<User> getAllUsers(Pageable pageable) {
+    public Page<UserDTO> getAllUsers(Pageable pageable) {
         try {
-            return userRepository.findAll(pageable);
+            return userRepository.findAll(pageable)
+                    .map(user -> modelMapper.map(user, UserDTO.class));
         } catch (Exception exception) {
             log.error("Failed to get all users", exception);
             throw new IntranetException("Failed to get all users", HttpStatus.INTERNAL_SERVER_ERROR);

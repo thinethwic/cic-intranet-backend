@@ -62,13 +62,17 @@ public class NewsServiceImpl implements NewsService {
     @Override
     public News createNews(NewsDTO newsDTO) {
         try {
+            // Check for duplicate title
+            if (newsRepository.existsByTitle(newsDTO.getTitle())) {
+                throw new IntranetException("A news article with this title already exists", HttpStatus.CONFLICT);
+            }
+
             User author = userRepository.findById(newsDTO.getAuthorId())
                     .orElseThrow(() -> new IntranetException("Author not found", HttpStatus.NOT_FOUND));
 
             News news = modelMapper.map(newsDTO, News.class);
             news.setAuthor(author);
 
-            // Stamp hotSince only if the article is being created as hot
             if (Boolean.TRUE.equals(newsDTO.getIsHot())) {
                 news.setIsHot(true);
                 news.setHotSince(LocalDateTime.now());
@@ -102,6 +106,11 @@ public class NewsServiceImpl implements NewsService {
             // Restore image if no new image was provided
             if (newsDTO.getImage() == null) {
                 news.setImage(existingImage);
+            }
+
+            if (!news.getTitle().equals(newsDTO.getTitle())
+                    && newsRepository.existsByTitle(newsDTO.getTitle())) {
+                throw new IntranetException("A news article with this title already exists", HttpStatus.CONFLICT);
             }
 
             // Handle hot/hotSince transition correctly

@@ -7,8 +7,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TicketCategoryRepository extends JpaRepository<TicketCategory, Long> {
+
+    Optional<TicketCategory> findByNameIgnoreCase(String name);
 
     boolean existsByNameIgnoreCaseAndSegment(String name, String segment);
 
