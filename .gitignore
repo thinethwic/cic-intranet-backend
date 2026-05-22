@@ -34,6 +34,7 @@ build/
 
 
 /src/main/resources/gcs-credentials.json
+!**/src/main/resources/gcs-credentials.json
 
 ### VS Code ###
 .vscode/
