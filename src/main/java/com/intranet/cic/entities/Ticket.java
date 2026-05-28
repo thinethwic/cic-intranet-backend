@@ -64,6 +64,9 @@ public class Ticket {
     @Column(name="department",nullable = true)
     private String department;
 
+    @Column(columnDefinition = "LONGTEXT")
+    private String attachments;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

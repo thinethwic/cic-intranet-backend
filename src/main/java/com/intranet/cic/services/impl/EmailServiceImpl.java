@@ -1,6 +1,7 @@
 package com.intranet.cic.services.impl;
 
 import com.intranet.cic.services.EmailService;
+import com.intranet.cic.services.FileStorageService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,10 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -20,6 +25,8 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 @Slf4j
 public class EmailServiceImpl implements EmailService {
+
+    private final FileStorageService fileStorageService;
 
     private final JavaMailSender mailSender;
 
@@ -32,13 +39,14 @@ public class EmailServiceImpl implements EmailService {
     @Async
     public void sendNewTicketNotification(String ticketNumber, String title,
                                           String description, String priority,
-                                          String segment, String department, LocalDateTime createdAt,String submittedBy,String email
-                                          ) {
+                                          String segment, String department,
+                                          LocalDateTime createdAt, String submittedBy,
+                                          String email, List<String> attachmentUrls) {
+        List<Path> tempFiles = new ArrayList<>();
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            // ✅ Split comma-separated emails into array
             String[] recipients = Arrays.stream(superUserEmail.split(","))
                     .map(String::trim)
                     .toArray(String[]::new);
@@ -46,12 +54,34 @@ public class EmailServiceImpl implements EmailService {
             helper.setTo(recipients);
             helper.setSubject("New Support Ticket: " + ticketNumber);
             helper.setText(buildEmailBody(ticketNumber, title, description,
-                    priority, segment, department,createdAt,submittedBy,email), true);
+                    priority, segment, department, createdAt, submittedBy, email), true);
+
+            // ── Download each GCS file to temp and attach ──
+            if (attachmentUrls != null) {
+                for (String url : attachmentUrls) {
+                    try {
+                        Path tempFile = fileStorageService.resolveFilePath(url);
+                        tempFiles.add(tempFile);
+                        String filename = url.substring(url.lastIndexOf('/') + 1);
+                        helper.addAttachment(filename, tempFile.toFile());
+                    } catch (Exception e) {
+                        log.warn("Could not attach file from URL {}: {}", url, e.getMessage());
+                    }
+                }
+            }
 
             mailSender.send(message);
-            log.info("Ticket notification sent for {} to {} recipients", ticketNumber, recipients.length);
+            log.info("Ticket notification sent for {} to {} recipients with {} attachment(s)",
+                    ticketNumber, recipients.length,
+                    attachmentUrls != null ? attachmentUrls.size() : 0);
+
         } catch (MessagingException e) {
             log.error("Failed to send ticket notification for {}: {}", ticketNumber, e.getMessage());
+        } finally {
+            // ── Clean up temp files ──
+            for (Path temp : tempFiles) {
+                try { Files.deleteIfExists(temp); } catch (Exception ignored) {}
+            }
         }
     }
 // Custom Email Section

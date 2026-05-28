@@ -14,7 +14,9 @@ import com.intranet.cic.repositories.TicketCommentRepository;
 import com.intranet.cic.repositories.TicketRepository;
 import com.intranet.cic.repositories.UserRepository;
 import com.intranet.cic.services.EmailService;
+import com.intranet.cic.services.FileStorageService;
 import com.intranet.cic.services.TicketService;
+import com.intranet.cic.utils.Base64MultipartFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -24,9 +26,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.time.Year;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 //import java.util.stream.Collectors;
 
 @Service
@@ -41,6 +50,8 @@ public class TicketServiceImpl implements TicketService {
     private final ModelMapper modelMapper;
     private final EmailService emailService;
     private final TicketCategoryRepository ticketCategoryRepository;
+    private final FileStorageService fileStorageService;
+    private final ObjectMapper objectMapper;
 
 //    @Value("${app.superuser.email}")
 //    private String superUserEmail;
@@ -140,8 +151,7 @@ public class TicketServiceImpl implements TicketService {
             ticket.setSubmittedBy(currentUser);
             ticket.setAssignedTo(null);
             ticket.setResolvedAt(null);
-
-            Ticket saved = ticketRepository.save(ticket);
+            ticket.setAttachments(ticketDTO.getAttachments());
 
 
 //// Find active admins for this segment + department
@@ -162,6 +172,14 @@ public class TicketServiceImpl implements TicketService {
 //                        .collect(Collectors.toList());
 //            }
 
+// ── Save attachments to GCS ──
+            List<String> attachmentUrls = saveAttachments(ticketDTO.getAttachments());
+            ticket.setAttachments(attachmentUrls.isEmpty()
+                    ? null
+                    : objectMapper.writeValueAsString(attachmentUrls));
+
+            Ticket saved = ticketRepository.save(ticket);
+
             emailService.sendNewTicketNotification(
                     saved.getTicketNumber(),
                     saved.getTitle(),
@@ -171,8 +189,8 @@ public class TicketServiceImpl implements TicketService {
                     saved.getDepartment(),
                     saved.getCreatedAt(),
                     currentUser.getName(),
-                    currentUser.getEmail()
-//                    adminEmails
+                    currentUser.getEmail(),
+                    attachmentUrls   // ← GCS URLs
             );
 
             return modelMapper.map(saved, TicketDTO.class);
@@ -483,5 +501,36 @@ public class TicketServiceImpl implements TicketService {
     @Transactional(readOnly = true)
     public Page<Ticket> getTicketsByCurrentAdminSegment(Pageable pageable) {
         return getTicketsByCurrentAdminScope(pageable);
+    }
+
+    private List<String> saveAttachments(String attachmentsJson) {
+        List<String> urls = new ArrayList<>();
+        if (attachmentsJson == null || attachmentsJson.isBlank()) return urls;
+
+        try {
+            List<Map<String, String>> attachments = objectMapper.readValue(
+                    attachmentsJson, new TypeReference<>() {});
+
+            for (Map<String, String> att : attachments) {
+                String dataUrl = att.get("dataUrl");
+                String name    = att.get("name");
+                if (dataUrl == null || !dataUrl.contains(",")) continue;
+
+                String mimeType = dataUrl.substring(dataUrl.indexOf(":") + 1, dataUrl.indexOf(";"));
+                String base64   = dataUrl.substring(dataUrl.indexOf(",") + 1);
+                byte[] bytes    = Base64.getDecoder().decode(base64);
+
+                String safeName = System.currentTimeMillis() + "_"
+                        + name.replaceAll("[^a-zA-Z0-9._-]", "_");
+
+                MultipartFile multipartFile = new Base64MultipartFile(bytes, safeName, mimeType);
+                String gcsUrl = fileStorageService.storeImage(multipartFile);
+                urls.add(gcsUrl);
+                log.info("Uploaded ticket attachment to GCS: {}", gcsUrl);
+            }
+        } catch (Exception e) {
+            log.error("Failed to save ticket attachments", e);
+        }
+        return urls;
     }
 }

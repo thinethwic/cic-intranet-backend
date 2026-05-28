@@ -45,6 +45,8 @@ public class TicketDTO {
 
     private String department;
 
+    private String attachments;
+
     private List<TicketComment> comments = new ArrayList<>();
 
     private LocalDateTime createdAt;
