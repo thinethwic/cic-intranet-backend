@@ -44,13 +44,14 @@ public class TicketCategoryServiceImpl implements TicketCategoryService {
         }
     }
 
-    // ✅ After — add the setCatCode line
     @Override
     public TicketCategory createCategory(TicketCategory category) {
         try {
             validationUtils.validateCategoryUniqueName(category.getName(), category.getSegment(), null);
             category.setActive(true);
-            category.setCatCode(category.getCatCode()); // ✅ explicitly set catCode
+            if (category.getCatCode() != null) {
+                category.setCatCode(category.getCatCode().trim().toUpperCase());
+            }
             return ticketCategoryRepository.save(category);
         } catch (IntranetException e) {
             throw e;
