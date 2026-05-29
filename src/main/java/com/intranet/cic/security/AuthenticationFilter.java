@@ -22,13 +22,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuthenticationFilter extends OncePerRequestFilter {
     private final TokenValidator tokenValidator;
-    private final UserRepository userRepository; // ✅ inject
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(@Nonnull HttpServletRequest request,
                                     @Nonnull HttpServletResponse response,
                                     @Nonnull FilterChain filterChain)
             throws ServletException, IOException {
+
+        // Skip filter for public endpoints
+        String path = request.getRequestURI();
+        if (isPublicEndpoint(path, request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String token = extractToken(request);
 
@@ -39,7 +46,6 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             String location   = tokenValidator.extractLocation(token);
             String department = tokenValidator.extractDepartment(token);
 
-            // ✅ Block inactive users — reject even with a valid token
             String lookupName = username != null ? username : email;
             boolean isActive = userRepository.findActiveByUsername(lookupName)
                     .orElse(false);
@@ -47,8 +53,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             if (!isActive) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
-                response.getWriter().write("{\"message\": \"Account is disabled\"}");
-                return; // ← stop filter chain, don't authenticate
+                response.getWriter().write("{\"error\": \"Unauthorized or Token has expired\", \"status\": 401}");
+                return;
             }
 
             List<GrantedAuthority> authorities = new ArrayList<>();
@@ -75,6 +81,22 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isPublicEndpoint(String path, String method) {
+        if (method.equals("POST") && path.startsWith("/api/v1/users")) return true;
+        if (method.equals("POST") && path.startsWith("/api/public")) return true;
+        if (method.equals("GET")  && path.startsWith("/api/v1/alerts")) return true;
+        if (method.equals("GET")  && path.startsWith("/api/v1/members")) return true;
+        if (method.equals("GET")  && path.startsWith("/api/v1/news")) return true;
+        if (method.equals("GET")  && path.startsWith("/api/v1/events")) return true;
+        if (method.equals("GET")  && path.startsWith("/api/v1/images")) return true;
+        if (method.equals("GET")  && path.startsWith("/api/v1/videos")) return true;
+        if (method.equals("GET")  && path.startsWith("/api/v1/documents")) return true;
+        if (method.equals("GET")  && path.startsWith("/api/v1/users")) return true;
+        if (method.equals("GET")  && path.startsWith("/api/public")) return true;
+        if (path.startsWith("/uploads/")) return true;
+        return false;
     }
 
     private String extractToken(HttpServletRequest request) {
