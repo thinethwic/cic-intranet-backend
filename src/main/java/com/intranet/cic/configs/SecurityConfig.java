@@ -70,7 +70,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/news/**", "/api/v1/events/**", "/api/v1/documents/**",
                                 "/api/v1/images/**", "/api/v1/videos/**",
-                                "/api/v1/announcements/**","/api/v1/alerts/**", "/api/v1/users/**"
+                                "/api/v1/announcements/**","/api/v1/alerts/**"
                         ).permitAll()
 
                         // Ticket endpoints — authenticated
