@@ -18,7 +18,8 @@ public class TicketCategory {
     @Column(name = "name")
     private String name;
 
-    @JsonProperty("catCode")          // ✅ force Jackson to read "catCode" from JSON
+
+    @JsonProperty("cat_code")
     @Column(name = "cat_code", unique = true)
     private String catCode;
 
