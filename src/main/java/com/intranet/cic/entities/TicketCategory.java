@@ -20,10 +20,8 @@ public class TicketCategory {
     @Column(name = "name")
     private String name;
 
-    @JsonProperty("cat_code")
-    @JsonAlias({"cat_code", "catCode"})
     @Column(name = "cat_code", unique = true)
-    private String catCode;
+    private String cat_code;
 
     @Column(name = "segment")
     private String segment;
