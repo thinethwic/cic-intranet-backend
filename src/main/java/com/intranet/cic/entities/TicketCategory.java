@@ -1,5 +1,6 @@
 package com.intranet.cic.entities;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -14,16 +15,17 @@ public class TicketCategory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name="name")
+    @Column(name = "name")
     private String name;
 
-    @Column(name="cat_code", unique = true)
+    @JsonProperty("catCode")          // ✅ force Jackson to read "catCode" from JSON
+    @Column(name = "cat_code", unique = true)
     private String catCode;
 
-    @Column(name="segment")
+    @Column(name = "segment")
     private String segment;
 
-    @Column(name="department")
+    @Column(name = "department")
     private String department;
 
     private boolean active;
