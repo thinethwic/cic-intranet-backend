@@ -17,7 +17,7 @@ public class TicketCategory {
     @Column(name="name")
     private String name;
 
-    @Column(name="catcode",unique = true)
+    @Column(name="cat_code", unique = true)
     private String catCode;
 
     @Column(name="segment")
