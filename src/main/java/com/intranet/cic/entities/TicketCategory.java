@@ -1,5 +1,7 @@
 package com.intranet.cic.entities;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -10,20 +12,21 @@ import java.time.LocalDateTime;
 @Table(name = "ticket_categories")
 @Data
 public class TicketCategory {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name="name")
+    @Column(name = "name")
     private String name;
 
-    @Column(name="catCode",unique = true)
-    private String catCode;
+    @Column(name = "cat_code", unique = true)
+    private String cat_code;
 
-    @Column(name="segment")
+    @Column(name = "segment")
     private String segment;
 
-    @Column(name="department")
+    @Column(name = "department")
     private String department;
 
     private boolean active;

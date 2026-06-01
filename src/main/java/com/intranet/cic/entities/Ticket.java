@@ -60,7 +60,6 @@ public class Ticket {
     @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL)
     private List<TicketComment> comments = new ArrayList<>();
 
-
     @Column(name="department",nullable = true)
     private String department;
 

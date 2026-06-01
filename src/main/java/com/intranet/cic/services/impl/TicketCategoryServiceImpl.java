@@ -49,6 +49,9 @@ public class TicketCategoryServiceImpl implements TicketCategoryService {
         try {
             validationUtils.validateCategoryUniqueName(category.getName(), category.getSegment(), null);
             category.setActive(true);
+            if (category.getCat_code() != null) {
+                category.setCat_code(category.getCat_code().trim().toUpperCase());
+            }
             return ticketCategoryRepository.save(category);
         } catch (IntranetException e) {
             throw e;
@@ -68,7 +71,7 @@ public class TicketCategoryServiceImpl implements TicketCategoryService {
             validationUtils.validateCategoryUniqueName(body.getName(), body.getSegment(), id);
 
             cat.setName(body.getName());
-            cat.setCatCode(body.getCatCode());
+            cat.setCat_code(body.getCat_code());
             cat.setSegment(body.getSegment());
             cat.setDepartment(body.getDepartment());
             cat.setActive(body.isActive());
