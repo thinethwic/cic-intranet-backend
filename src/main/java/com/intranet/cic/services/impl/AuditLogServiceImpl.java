@@ -67,7 +67,7 @@ public class AuditLogServiceImpl implements AuditLogService {
         LocalDateTime to      = toStr   != null && !toStr.isBlank()
                 ? LocalDate.parse(toStr).atTime(23, 59, 59) : null;
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size);
 
         return repo.findFiltered(
                 username,

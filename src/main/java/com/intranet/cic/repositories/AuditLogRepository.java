@@ -26,6 +26,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
       AND (CAST(:status AS text)    IS NULL OR a.status     = :status)
       AND (CAST(:from AS timestamp) IS NULL OR a.created_at >= :from)
       AND (CAST(:to   AS timestamp) IS NULL OR a.created_at <= :to)
+    ORDER BY a.created_at DESC
     """,
             countQuery = """
     SELECT count(*) FROM audit_logs a
