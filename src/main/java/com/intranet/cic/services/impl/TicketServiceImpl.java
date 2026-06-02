@@ -87,7 +87,7 @@ public class TicketServiceImpl implements TicketService {
                 catCode = ticketCategoryRepository
                         .findByNameIgnoreCase(categoryName.trim())
                         .filter(TicketCategory::isActive)
-                        .map(TicketCategory::getCat_code)
+                        .map(TicketCategory::getCatCode)
                         .map(String::toUpperCase)
                         .orElse(null);
 

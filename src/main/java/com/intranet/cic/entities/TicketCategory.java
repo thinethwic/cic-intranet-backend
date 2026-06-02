@@ -21,7 +21,8 @@ public class TicketCategory {
     private String name;
 
     @Column(name = "cat_code", unique = true)
-    private String cat_code;
+    @JsonProperty("cat_code")
+    private String catCode;          // ← changed from cat_code to catCode
 
     @Column(name = "segment")
     private String segment;
