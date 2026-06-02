@@ -63,7 +63,7 @@ public class Ticket {
     @Column(name="department",nullable = true)
     private String department;
 
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(name = "attachments", columnDefinition = "TEXT")
     private String attachments;
 
     @CreationTimestamp
