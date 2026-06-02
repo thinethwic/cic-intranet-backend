@@ -49,38 +49,46 @@ public class SecurityConfig {
                         .requestMatchers("/uploads/images/**").permitAll()
                         .requestMatchers("/uploads/documents/**").permitAll()
 
-                        // Public read-only endpoints
+                        // ── Alerts — specific rules first ──────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/v1/alerts/all").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/alerts", "/api/v1/alerts/*").permitAll()
+                        .requestMatchers(HttpMethod.POST,   "/api/v1/alerts/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT,    "/api/v1/alerts/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/alerts/**").authenticated()
+
+                        // ── Public read-only endpoints ─────────────────────────────
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/events", "/api/v1/members", "/api/v1/videos",
                                 "/api/v1/images", "/api/v1/documents",
                                 "/api/v1/documents/*/view", "/api/v1/documents/*/download",
-                                "/api/v1/news", "/api/v1/news/*", "/api/v1/news/*/image","/api/v1/alerts","/api/v1/announcements","/uploads/images/**",
-                                "/uploads/documents/**","/api/v1/audit-logs"
+                                "/api/v1/news", "/api/v1/news/*", "/api/v1/news/*/image",
+                                "/api/v1/announcements",
+                                "/uploads/images/**", "/uploads/documents/**",
+                                "/api/v1/audit-logs"
                         ).permitAll()
 
-                        // Departments — authenticated; @PreAuthorize handles role checks
+                        // ── Departments — authenticated; @PreAuthorize handles roles ──
                         .requestMatchers("/api/v1/departments/**").authenticated()
 
-                        // Users
+                        // ── Users ──────────────────────────────────────────────────
                         .requestMatchers(HttpMethod.GET,  "/api/v1/users").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/users/**").permitAll()
                         .requestMatchers(HttpMethod.PUT,  "/api/v1/users").permitAll()
 
-                        // Other POST endpoints
+                        // ── Other public POST endpoints ────────────────────────────
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/news/**", "/api/v1/events/**", "/api/v1/documents/**",
                                 "/api/v1/images/**", "/api/v1/videos/**",
-                                "/api/v1/announcements/**","/api/v1/alerts/**"
+                                "/api/v1/announcements/**"
                         ).permitAll()
 
-                        // Ticket endpoints — authenticated
+                        // ── Tickets — authenticated ────────────────────────────────
                         .requestMatchers("/api/tickets/**").authenticated()
 
+                        // ── Audit logs — authenticated ─────────────────────────────
                         .requestMatchers("/api/v1/audit-logs/**").authenticated()
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/alerts/all").authenticated()
-
-                        // Admin endpoints
+                        // ── Admin endpoints ────────────────────────────────────────
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         .anyRequest().authenticated()
