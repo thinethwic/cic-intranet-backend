@@ -86,7 +86,11 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private boolean isPublicEndpoint(String path, String method) {
         if (method.equals("POST") && path.startsWith("/api/v1/users")) return true;
         if (method.equals("POST") && path.startsWith("/api/public")) return true;
-        if (method.equals("GET")  && path.startsWith("/api/v1/alerts")) return true;
+
+        // Alerts — /all requires auth, everything else is public
+        if (method.equals("GET") && path.startsWith("/api/v1/alerts")
+                && !path.equals("/api/v1/alerts/all")) return true;
+
         if (method.equals("GET")  && path.startsWith("/api/v1/members")) return true;
         if (method.equals("GET")  && path.startsWith("/api/v1/news")) return true;
         if (method.equals("GET")  && path.startsWith("/api/v1/events")) return true;
