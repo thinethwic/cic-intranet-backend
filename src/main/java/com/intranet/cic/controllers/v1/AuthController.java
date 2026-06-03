@@ -30,7 +30,7 @@ public class AuthController extends AbstractController {
         return sendOkResponse(authService.login(loginDTO));
     }
 
-    @PostMapping("/logout")
+    @PostMapping("/api/v1/auth/logout")
     public ResponseEntity<Void> logout(Authentication authentication) {
         if (authentication != null) {
             auditLogService.record(

@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(intranetCustomAccessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+
                         .requestMatchers(
                                 "/api/public/**",
                                 "/v3/api-docs/**"
@@ -81,6 +82,8 @@ public class SecurityConfig {
                                 "/api/v1/images/**", "/api/v1/videos/**",
                                 "/api/v1/announcements/**"
                         ).permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
 
                         // ── Tickets — authenticated ────────────────────────────────
                         .requestMatchers("/api/tickets/**").authenticated()
