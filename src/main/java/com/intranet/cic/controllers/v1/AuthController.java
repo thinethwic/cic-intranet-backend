@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/public/auth")
 @RequiredArgsConstructor
 public class AuthController extends AbstractController {
 
@@ -25,7 +24,7 @@ public class AuthController extends AbstractController {
     private final AuditLogService auditLogService;
     private final HttpServletRequest httpRequest;
 
-    @PostMapping("/login")
+    @PostMapping("/api/public/auth/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginDTO loginDTO) {
         return sendOkResponse(authService.login(loginDTO));
     }
