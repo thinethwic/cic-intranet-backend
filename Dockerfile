@@ -1,10 +1,23 @@
+# ─── Stage 1: Build ───────────────────────────────────────────────
+FROM maven:3.9-eclipse-temurin-17 AS builder
+
+WORKDIR /app
+
+# Copy pom.xml first — Maven deps cached unless pom.xml changes
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Copy source and build JAR
+COPY src ./src
+RUN mvn package -DskipTests -B
+
+# ─── Stage 2: Run ─────────────────────────────────────────────────
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-COPY target/*.jar app.jar
+COPY --from=builder /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-# Run the application directly from the target folder
-ENTRYPOINT ["java", "-jar", "target/cic-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
