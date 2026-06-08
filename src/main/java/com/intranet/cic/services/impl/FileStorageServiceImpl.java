@@ -1,10 +1,5 @@
 package com.intranet.cic.services.impl;
 
-import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Storage;
-import com.intranet.cic.entities.types.FileType;
 import com.intranet.cic.execeptions.IntranetException;
 import com.intranet.cic.services.FileStorageService;
 import lombok.extern.slf4j.Slf4j;
@@ -14,10 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,14 +17,11 @@ import java.util.UUID;
 @Slf4j
 public class FileStorageServiceImpl implements FileStorageService {
 
-    @Value("${gcs.bucket-name}")
-    private String bucketName;
+    @Value("${file.upload-dir:/uploads}")
+    private String uploadDir;
 
-    private final Storage storage;
-
-    public FileStorageServiceImpl(Storage storage) {
-        this.storage = storage;
-    }
+    @Value("${app.base-url:http://192.168.120.10}")
+    private String baseUrl;
 
     private static final List<String> ALLOWED_DOCUMENT_TYPES = List.of(
             "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv"
@@ -45,30 +34,30 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     public String storeDocument(MultipartFile file) {
         validateExtension(file, ALLOWED_DOCUMENT_TYPES, "document");
-        return store(file, "documents/");
+        return store(file, "documents");
     }
 
     public String storeImage(MultipartFile file) {
         validateExtension(file, ALLOWED_IMAGE_TYPES, "image");
-        return store(file, "images/");
+        return store(file, "images");
     }
 
     private String store(MultipartFile file, String folder) {
         try {
-            String fileName = folder + UUID.randomUUID() + "_" + file.getOriginalFilename();
+            Path uploadPath = Paths.get(uploadDir, folder);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
 
-            BlobId blobId = BlobId.of(bucketName, fileName);
-            BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
-                    .setContentType(file.getContentType())
-                    .build();
+            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            Path filePath = uploadPath.resolve(fileName);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            storage.create(blobInfo, file.getBytes());
-
-            // Return the public URL
-            return "https://storage.googleapis.com/" + bucketName + "/" + fileName;
+            // Return URL pointing to nginx /uploads/ endpoint
+            return baseUrl + "/uploads/" + folder + "/" + fileName;
 
         } catch (IOException e) {
-            log.error("Failed to store file in GCS", e);
+            log.error("Failed to store file locally", e);
             throw new IntranetException("Failed to store file", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -76,40 +65,34 @@ public class FileStorageServiceImpl implements FileStorageService {
     // ── Delete ─────────────────────────────────────────────────────────────────
 
     public void deleteFile(String fileUrl) {
-        String prefix = "https://storage.googleapis.com/" + bucketName + "/";
-        String blobName = fileUrl.replace(prefix, "");
+        try {
+            if (fileUrl == null || fileUrl.isBlank()) return;
 
-        BlobId blobId = BlobId.of(bucketName, blobName);
-        boolean deleted = storage.delete(blobId);
+            // Extract path after /uploads/
+            String filePath = fileUrl.substring(fileUrl.indexOf("/uploads/"));
+            Path path = Paths.get(uploadDir + filePath.replace("/uploads", ""));
+            Files.deleteIfExists(path);
 
-        if (!deleted) {
-            log.warn("File not found in GCS for deletion: {}", fileUrl);
+        } catch (IOException e) {
+            log.warn("Failed to delete file: {}", fileUrl, e);
         }
     }
 
-    // ── Download / Resolve ─────────────────────────────────────────────────────
+    // ── Resolve ────────────────────────────────────────────────────────────────
 
     public Path resolveFilePath(String fileUrl) {
-        try {
-            String prefix = "https://storage.googleapis.com/" + bucketName + "/";
-            String blobName = fileUrl.replace(prefix, "");
-
-            Blob blob = storage.get(BlobId.of(bucketName, blobName));
-            if (blob == null) {
-                throw new IntranetException("File not found", HttpStatus.NOT_FOUND);
-            }
-
-            // Download to a temp file and return its path
-            String extension = blobName.substring(blobName.lastIndexOf('.'));
-            Path tempFile = Files.createTempFile("gcs-download-", extension);
-            blob.downloadTo(tempFile);
-
-            return tempFile;
-
-        } catch (IOException e) {
-            log.error("Failed to resolve file from GCS", e);
-            throw new IntranetException("Failed to download file", HttpStatus.INTERNAL_SERVER_ERROR);
+        if (fileUrl == null || fileUrl.isBlank()) {
+            throw new IntranetException("File URL is empty", HttpStatus.BAD_REQUEST);
         }
+
+        String filePath = fileUrl.substring(fileUrl.indexOf("/uploads/"));
+        Path path = Paths.get(uploadDir + filePath.replace("/uploads", ""));
+
+        if (!Files.exists(path)) {
+            throw new IntranetException("File not found", HttpStatus.NOT_FOUND);
+        }
+
+        return path;
     }
 
     // ── Validation ─────────────────────────────────────────────────────────────

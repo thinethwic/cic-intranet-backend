@@ -524,9 +524,9 @@ public class TicketServiceImpl implements TicketService {
                         + name.replaceAll("[^a-zA-Z0-9._-]", "_");
 
                 MultipartFile multipartFile = new Base64MultipartFile(bytes, safeName, mimeType);
-                String gcsUrl = fileStorageService.storeImage(multipartFile);
-                urls.add(gcsUrl);
-                log.info("Uploaded ticket attachment to GCS: {}", gcsUrl);
+                String fileUrl = fileStorageService.storeImage(multipartFile); // ✅ now saves locally
+                urls.add(fileUrl);
+                log.info("Uploaded ticket attachment to local storage: {}", fileUrl); // ✅ updated log
             }
         } catch (Exception e) {
             log.error("Failed to save ticket attachments", e);

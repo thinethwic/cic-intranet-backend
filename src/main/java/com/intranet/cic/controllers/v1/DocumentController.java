@@ -26,8 +26,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.net.MalformedURLException;
-
+import java.nio.file.Path;
 
 @RestController
 @RequestMapping(path = "/api/v1/documents")
@@ -57,7 +56,7 @@ public class DocumentController extends AbstractController {
             @PathVariable Long id,
             @PageableDefault(size = 50, sort = "accessedAt") Pageable pageable
     ) {
-        documentService.getDocumentById(id); // ✅ 404 if not found
+        documentService.getDocumentById(id);
         return sendOkResponse(accessLogRepository.findByDocumentId(id, pageable));
     }
 
@@ -82,13 +81,13 @@ public class DocumentController extends AbstractController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
         Document document = documentService.getDocumentById(id);
-        String fileUrl = document.getFileUrl(); // capture URL before deletion
-        documentService.deleteDocument(id);     // DB first — if this throws, storage is untouched
-        fileStorageService.deleteFile(fileUrl); // storage second — only reached if DB succeeded
+        String fileUrl = document.getFileUrl();
+        documentService.deleteDocument(id);
+        fileStorageService.deleteFile(fileUrl);
         return sendNoContentResponse();
     }
 
-    // ✅ Download — logs access
+    // ✅ Download
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> downloadDocument(
             @PathVariable Long id,
@@ -101,7 +100,6 @@ public class DocumentController extends AbstractController {
             throw new IntranetException("Download not allowed for this document", HttpStatus.FORBIDDEN);
         }
 
-        // ✅ Check if PRIVATE — only AUTHORIZED or ADMIN can access
         if (document.getAccess().name().equals("PRIVATE")) {
             boolean isMember = document.getMembers().stream()
                     .anyMatch(m -> m.getUser() != null &&
@@ -124,7 +122,7 @@ public class DocumentController extends AbstractController {
                 .body(resource);
     }
 
-    // ✅ View — logs access
+    // ✅ View
     @GetMapping("/{id}/view")
     public ResponseEntity<Resource> viewDocument(
             @PathVariable Long id,
@@ -137,7 +135,6 @@ public class DocumentController extends AbstractController {
             throw new IntranetException("View not allowed for this document", HttpStatus.FORBIDDEN);
         }
 
-        // ✅ Check if PRIVATE
         if (document.getAccess().name().equals("PRIVATE")) {
             boolean isMember = document.getMembers().stream()
                     .anyMatch(m -> m.getUser() != null &&
@@ -160,24 +157,25 @@ public class DocumentController extends AbstractController {
                 .body(resource);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-
+    // ✅ Fixed — uses local file path instead of GCS URL
     private Resource resolveResource(String fileUrl) {
         try {
-            // ✅ Directly use the GCS public URL as a Resource
-            Resource resource = new UrlResource(fileUrl);
+            Path filePath = fileStorageService.resolveFilePath(fileUrl);
+            Resource resource = new UrlResource(filePath.toUri());
             if (!resource.exists()) {
                 throw new IntranetException("File not found", HttpStatus.NOT_FOUND);
             }
             return resource;
-        } catch (MalformedURLException e) {
+        } catch (IntranetException e) {
+            throw e;
+        } catch (Exception e) {
             throw new IntranetException("File not found", HttpStatus.NOT_FOUND);
         }
     }
 
     private String resolveContentType(String fileUrl) {
-        // ✅ Derive content type from file extension — no local file needed
         String lower = fileUrl.toLowerCase();
         if (lower.endsWith(".pdf"))  return "application/pdf";
         if (lower.endsWith(".doc"))  return "application/msword";
@@ -193,7 +191,7 @@ public class DocumentController extends AbstractController {
         if (lower.endsWith(".gif"))  return "image/gif";
         if (lower.endsWith(".webp")) return "image/webp";
         if (lower.endsWith(".svg"))  return "image/svg+xml";
-        return "application/octet-stream"; // fallback
+        return "application/octet-stream";
     }
 
     private void logAccess(Document document, Authentication authentication,
@@ -210,13 +208,11 @@ public class DocumentController extends AbstractController {
                         user.getUsername(), document.getId(), action);
             });
         } catch (Exception e) {
-            // ✅ Never fail the request if logging fails
             log.warn("Failed to log document access for doc id: {}", document.getId(), e);
         }
     }
 
     private String extractFileName(String fileUrl) {
-        // GCS URL: https://storage.googleapis.com/bucket/documents/uuid_filename.pdf
         return fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
     }
 }
