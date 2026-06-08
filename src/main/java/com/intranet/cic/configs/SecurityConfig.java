@@ -47,8 +47,7 @@ public class SecurityConfig {
                                 "/api/public/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        .requestMatchers("/uploads/images/**").permitAll()
-                        .requestMatchers("/uploads/documents/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
 
                         // ── Alerts — specific rules first ──────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/v1/alerts/all").authenticated()
