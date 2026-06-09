@@ -188,7 +188,7 @@ public class TicketServiceImpl implements TicketService {
                     saved.getSegment() != null ? saved.getSegment().name() : "N/A",
                     saved.getDepartment(),
                     saved.getCreatedAt(),
-                    currentUser.getName(),
+                    saved.getSubmittedByName(),
                     currentUser.getEmail(),
                     attachmentUrls   // ← GCS URLs
             );

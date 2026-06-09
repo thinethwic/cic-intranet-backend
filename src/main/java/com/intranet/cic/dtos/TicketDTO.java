@@ -28,6 +28,9 @@ public class TicketDTO {
     @Size(min = 2, max = 500, message = "Description must be between 2 and 500 characters")
     private String description;
 
+    @NotNull(message = "Category by name is required")
+    private String submittedByName;
+
     @NotNull(message = "Category is required")
     private String category;
 

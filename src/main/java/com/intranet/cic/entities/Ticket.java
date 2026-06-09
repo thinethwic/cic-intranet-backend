@@ -31,6 +31,8 @@ public class Ticket {
     @Column(name = "description", columnDefinition = "TEXT", nullable = false)
     private String description;
 
+    @Column(name = "submitted_name", nullable = false)
+    private String submittedByName;
 
     @Column(name = "category", nullable = false)
     private String category;   // IT, HR, FINANCE, FACILITIES, OTHER
