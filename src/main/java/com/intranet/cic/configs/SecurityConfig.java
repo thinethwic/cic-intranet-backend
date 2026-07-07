@@ -87,6 +87,9 @@ public class SecurityConfig {
                         // ── Tickets — authenticated ────────────────────────────────
                         .requestMatchers("/api/tickets/**").authenticated()
 
+                        // ── Tasks — authenticated (personal, per-user) ─────────────
+                        .requestMatchers("/api/tasks/**").authenticated()
+
                         // ── Audit logs — authenticated ─────────────────────────────
                         .requestMatchers("/api/v1/audit-logs/**").authenticated()
 
