@@ -96,7 +96,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (method.equals("GET")  && path.startsWith("/api/v1/events")) return true;
         if (method.equals("GET")  && path.startsWith("/api/v1/images")) return true;
         if (method.equals("GET")  && path.startsWith("/api/v1/videos")) return true;
-        if (method.equals("GET")  && path.startsWith("/api/v1/documents")) return true;
+        if (method.equals("GET")  && path.startsWith("/api/v1/documents") && !path.endsWith("/logs")) return true;
         if (method.equals("GET")  && path.startsWith("/api/v1/users")) return true;
         if (method.equals("GET")  && path.startsWith("/api/public")) return true;
         if (path.startsWith("/uploads/")) return true;
