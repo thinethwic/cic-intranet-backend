@@ -91,6 +91,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (method.equals("GET") && path.startsWith("/api/v1/alerts")
                 && !path.equals("/api/v1/alerts/all")) return true;
 
+        // Hero shortcuts — reading the groups (with nested shortcuts) is public;
+        // create/update/delete still require auth + SUPER_ADMIN (see SecurityConfig).
+        if (method.equals("GET") && path.startsWith("/api/v1/hero-shortcut-groups")) return true;
+
         if (method.equals("GET")  && path.startsWith("/api/v1/members")) return true;
         if (method.equals("GET")  && path.startsWith("/api/v1/news")) return true;
         if (method.equals("GET")  && path.startsWith("/api/v1/events")) return true;

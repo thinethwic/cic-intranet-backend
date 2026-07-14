@@ -56,6 +56,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT,    "/api/v1/alerts/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/alerts/**").authenticated()
 
+                        // ── Hero shortcuts — GET public, mutations SUPER_ADMIN only ──
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/hero-shortcut-groups", "/api/v1/hero-shortcut-groups/*"
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.POST,   "/api/v1/hero-shortcut-groups/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT,    "/api/v1/hero-shortcut-groups/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/hero-shortcut-groups/**").authenticated()
+                        .requestMatchers("/api/v1/hero-shortcuts/**").authenticated()
+
                         // ── Public read-only endpoints ─────────────────────────────
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/events", "/api/v1/members", "/api/v1/videos",
