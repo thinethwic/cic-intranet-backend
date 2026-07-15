@@ -30,12 +30,13 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                                     @Nonnull FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Skip filter for public endpoints
         String path = request.getRequestURI();
-        if (isPublicEndpoint(path, request.getMethod())) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        // "Public" endpoints don't require a token, but if one is present we still
+        // validate it and populate the SecurityContext (needed e.g. so document
+        // view/download requests can resolve the acting user for access logging
+        // and PRIVATE-document membership checks). Only the "reject on inactive
+        // user" short-circuit below is skipped for public endpoints.
+        boolean isPublic = isPublicEndpoint(path, request.getMethod());
 
         String token = extractToken(request);
 
@@ -51,6 +52,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                     .orElse(false);
 
             if (!isActive) {
+                if (isPublic) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
                 response.getWriter().write("{\"error\": \"Unauthorized or Token has expired\", \"status\": 401}");

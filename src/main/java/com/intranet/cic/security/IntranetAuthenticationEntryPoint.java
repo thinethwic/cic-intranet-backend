@@ -23,7 +23,17 @@ public class IntranetAuthenticationEntryPoint implements AuthenticationEntryPoin
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-        log.error("Unauthorized error: {}", authException.getMessage());
+        String authHeader = request.getHeader("Authorization");
+        boolean hasAuthHeader = authHeader != null && !authHeader.isBlank();
+
+        log.error(
+                "Unauthorized error: {} | method={} uri={} authHeaderPresent={} remoteIp={}",
+                authException.getMessage(),
+                request.getMethod(),
+                request.getRequestURI(),
+                hasAuthHeader,
+                resolveClientIp(request)
+        );
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -33,5 +43,17 @@ public class IntranetAuthenticationEntryPoint implements AuthenticationEntryPoin
         body.put("error", "Unauthorized or Token has expired");
 
         response.getWriter().write(objectMapper.writeValueAsString(body));
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp;
+        }
+        return request.getRemoteAddr();
     }
 }
