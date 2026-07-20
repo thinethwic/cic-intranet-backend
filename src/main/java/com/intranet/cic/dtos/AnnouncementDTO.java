@@ -16,6 +16,11 @@ public class AnnouncementDTO {
     @Size(min = 2, max = 200, message = "Title must be between 2 and 200 characters")
     private String title;
 
+    @Size(max = 1000, message = "Description is too long")
+    private String description;
+
+    private String image;
+
     @NotNull(message = "Category is required")
     private Category category;
 

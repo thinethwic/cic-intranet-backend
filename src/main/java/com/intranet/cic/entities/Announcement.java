@@ -24,6 +24,12 @@ public class Announcement {
     @Column(name = "title", nullable = false)
     private String title;
 
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "image")
+    private String image;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
     private Category category;
