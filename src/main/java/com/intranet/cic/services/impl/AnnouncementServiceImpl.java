@@ -10,6 +10,7 @@ import com.intranet.cic.services.AnnouncementService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     @Override
     public List<Announcement> getAllAnnouncements() {
         try{
-            return announcementRepository.findAll();
+            return announcementRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         } catch (Exception exception){
             log.error("Failed to get all announcements", exception);
             throw new IntranetException("Failed to get all announcements", HttpStatus.INTERNAL_SERVER_ERROR);

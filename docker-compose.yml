@@ -27,6 +27,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://cic-postgres:5432/cic-intranet
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: "1234"
+      WHATSAPP_ENABLED: ${WHATSAPP_ENABLED:-false}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_TEMPLATE_NAME: ${WHATSAPP_TEMPLATE_NAME:-new_content_alert}
     depends_on:
       postgres:
         condition: service_healthy

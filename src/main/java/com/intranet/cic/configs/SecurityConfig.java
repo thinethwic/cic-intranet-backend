@@ -73,7 +73,7 @@ public class SecurityConfig {
                                 "/api/v1/news", "/api/v1/news/*", "/api/v1/news/*/image",
                                 "/api/v1/announcements",
                                 "/uploads/images/**", "/uploads/documents/**",
-                                "/api/v1/audit-logs"
+                                "/api/v1/audit-logs","/api/v1/nav-items"
                         ).permitAll()
 
                         // ── Departments — authenticated; @PreAuthorize handles roles ──

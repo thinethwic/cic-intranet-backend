@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +28,12 @@ public class GalleryServiceImpl implements GalleryService {
     @Override
     public Page<Gallery> getAllImages(Pageable pageable) {
         try{
-            return galleryRepository.findAll(pageable);
+            Pageable sorted = PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    Sort.by(Sort.Direction.DESC, "createdAt")  // ← newest first
+            );
+            return galleryRepository.findAll(sorted);
         } catch (Exception exception){
             log.error("Failed to get all images", exception);
             throw new IntranetException("Failed to get all images", HttpStatus.INTERNAL_SERVER_ERROR);
