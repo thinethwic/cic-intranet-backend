@@ -1,5 +1,6 @@
 package com.intranet.cic.dtos;
 
+import com.intranet.cic.entities.types.TaskCategory;
 import com.intranet.cic.entities.types.TaskPriority;
 import com.intranet.cic.entities.types.TaskStatus;
 import jakarta.validation.constraints.NotBlank;
@@ -28,6 +29,10 @@ public class TaskDTO {
     private TaskPriority priority;
 
     private LocalDate dueDate;
+
+    private TaskCategory category;
+
+    private Boolean recurring;
 
     private OwnerDTO owner;
 

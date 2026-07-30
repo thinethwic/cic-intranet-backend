@@ -1,6 +1,7 @@
 package com.intranet.cic.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.intranet.cic.entities.types.TaskCategory;
 import com.intranet.cic.entities.types.TaskPriority;
 import com.intranet.cic.entities.types.TaskStatus;
 import jakarta.persistence.*;
@@ -39,6 +40,13 @@ public class Task {
 
     @Column(name = "due_date")
     private LocalDate dueDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(20) default 'GENERAL'")
+    private TaskCategory category;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean recurring;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)

@@ -5,6 +5,7 @@ import com.intranet.cic.dtos.TaskAttachmentDTO;
 import com.intranet.cic.dtos.TaskDTO;
 import com.intranet.cic.dtos.TaskDocumentDTO;
 import com.intranet.cic.entities.TaskAttachment;
+import com.intranet.cic.entities.types.TaskCategory;
 import com.intranet.cic.entities.types.TaskPriority;
 import com.intranet.cic.entities.types.TaskStatus;
 import com.intranet.cic.execeptions.IntranetException;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -48,8 +50,12 @@ public class TaskController extends AbstractController {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) TaskStatus status,
             @RequestParam(required = false) TaskPriority priority,
+            @RequestParam(required = false) TaskCategory category,
+            @RequestParam(required = false) LocalDate dueDateFrom,
+            @RequestParam(required = false) LocalDate dueDateTo,
             @RequestParam(required = false) String q) {
-        return sendOkResponse(taskService.getMyTasks(pageable, status, priority, q));
+        return sendOkResponse(taskService.getMyTasks(
+                pageable, status, priority, category, dueDateFrom, dueDateTo, q));
     }
 
     // Aggregated "my documents" view across every task — registered ahead of

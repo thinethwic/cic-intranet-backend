@@ -6,6 +6,7 @@ import com.intranet.cic.dtos.TaskDocumentDTO;
 import com.intranet.cic.entities.Task;
 import com.intranet.cic.entities.TaskAttachment;
 import com.intranet.cic.entities.User;
+import com.intranet.cic.entities.types.TaskCategory;
 import com.intranet.cic.entities.types.TaskPriority;
 import com.intranet.cic.entities.types.TaskStatus;
 import com.intranet.cic.execeptions.IntranetException;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -77,6 +79,8 @@ public class TaskServiceImpl implements TaskService {
         dto.setStatus(task.getStatus());
         dto.setPriority(task.getPriority());
         dto.setDueDate(task.getDueDate());
+        dto.setCategory(task.getCategory());
+        dto.setRecurring(task.isRecurring());
         dto.setCreatedAt(task.getCreatedAt());
         dto.setUpdatedAt(task.getUpdatedAt());
 
@@ -138,6 +142,8 @@ public class TaskServiceImpl implements TaskService {
             task.setDescription(taskDTO.getDescription());
             task.setPriority(taskDTO.getPriority());
             task.setDueDate(taskDTO.getDueDate());
+            task.setCategory(taskDTO.getCategory() != null ? taskDTO.getCategory() : TaskCategory.GENERAL);
+            task.setRecurring(Boolean.TRUE.equals(taskDTO.getRecurring()));
             task.setStatus(TaskStatus.TODO);
             task.setOwner(currentUser);
 
@@ -152,11 +158,13 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TaskDTO> getMyTasks(Pageable pageable, TaskStatus status, TaskPriority priority, String q) {
+    public Page<TaskDTO> getMyTasks(Pageable pageable, TaskStatus status, TaskPriority priority,
+                                     TaskCategory category, LocalDate dueDateFrom, LocalDate dueDateTo, String q) {
         try {
             User currentUser = getCurrentUser();
             String query = (q == null || q.isBlank()) ? null : q.trim();
-            return taskRepository.findMyTasks(currentUser, status, priority, query, pageable)
+            return taskRepository.findMyTasks(
+                            currentUser, status, priority, category, dueDateFrom, dueDateTo, query, pageable)
                     .map(this::toDTO);
         } catch (IntranetException e) {
             throw e;
@@ -176,20 +184,48 @@ public class TaskServiceImpl implements TaskService {
     public TaskDTO updateTask(Long id, TaskDTO taskDTO) {
         try {
             Task task = getOwnedTask(id);
+            TaskStatus previousStatus = task.getStatus();
 
             if (taskDTO.getTitle() != null) task.setTitle(taskDTO.getTitle().trim());
             if (taskDTO.getDescription() != null) task.setDescription(taskDTO.getDescription());
             if (taskDTO.getPriority() != null) task.setPriority(taskDTO.getPriority());
+            if (taskDTO.getCategory() != null) task.setCategory(taskDTO.getCategory());
+            if (taskDTO.getRecurring() != null) task.setRecurring(taskDTO.getRecurring());
             if (taskDTO.getStatus() != null) task.setStatus(taskDTO.getStatus());
             task.setDueDate(taskDTO.getDueDate());
 
-            return toDTO(taskRepository.save(task));
+            Task saved = taskRepository.save(task);
+
+            // A compliance task marked Done regenerates itself for next year —
+            // so the obligation never silently falls off the board once completed.
+            if (saved.getStatus() == TaskStatus.DONE
+                    && previousStatus != TaskStatus.DONE
+                    && saved.isRecurring()
+                    && saved.getCategory() == TaskCategory.COMPLIANCE
+                    && saved.getDueDate() != null) {
+                createNextOccurrence(saved);
+            }
+
+            return toDTO(saved);
         } catch (IntranetException e) {
             throw e;
         } catch (Exception e) {
             log.error("Failed to update task id: {}", id, e);
             throw new IntranetException("Failed to update task", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private void createNextOccurrence(Task source) {
+        Task next = new Task();
+        next.setTitle(source.getTitle());
+        next.setDescription(source.getDescription());
+        next.setPriority(source.getPriority());
+        next.setCategory(source.getCategory());
+        next.setRecurring(source.isRecurring());
+        next.setDueDate(source.getDueDate().plusYears(1));
+        next.setStatus(TaskStatus.TODO);
+        next.setOwner(source.getOwner());
+        taskRepository.save(next);
     }
 
     @Override
