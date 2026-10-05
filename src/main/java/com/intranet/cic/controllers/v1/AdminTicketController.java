@@ -20,7 +20,7 @@ import static com.intranet.cic.constants.UserRoles.*;
 @RestController
 @RequestMapping("/api/admin/tickets")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN','HOD_LEVEL')")
 public class AdminTicketController extends AbstractController {
 
     private final TicketService ticketService;
@@ -34,7 +34,7 @@ public class AdminTicketController extends AbstractController {
 
     // ─── Get tickets by segment (for ADMIN role) ─────────────────
     @GetMapping("/my-segment")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('HOD_LEVEL')")
     public ResponseEntity<Page<Ticket>> getTicketsBySegment(
             @PageableDefault(size = 100, sort = "createdAt") Pageable pageable) {
         return sendOkResponse(ticketService.getTicketsByCurrentAdminSegment(pageable));

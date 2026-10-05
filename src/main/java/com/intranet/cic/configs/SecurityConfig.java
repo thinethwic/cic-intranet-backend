@@ -103,7 +103,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/audit-logs/**").authenticated()
 
                         // ── Admin endpoints ────────────────────────────────────────
-                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN","HOD_LEVEL")
 
                         .anyRequest().authenticated()
                 )
