@@ -152,6 +152,7 @@ public class TicketServiceImpl implements TicketService {
             ticket.setAssignedTo(null);
             ticket.setResolvedAt(null);
             ticket.setAttachments(ticketDTO.getAttachments());
+            ticket.setReportedAt(ticketDTO.getReportedAt());
 
 
 //// Find active admins for this segment + department
@@ -385,6 +386,7 @@ public class TicketServiceImpl implements TicketService {
             if (ticketDTO.getDescription() != null) ticket.setDescription(ticketDTO.getDescription());
             if (ticketDTO.getCategory() != null)    ticket.setCategory(ticketDTO.getCategory());
             if (ticketDTO.getPriority() != null)    ticket.setPriority(ticketDTO.getPriority());
+            if (ticketDTO.getReportedAt() != null) ticket.setReportedAt(ticketDTO.getReportedAt());
             if (ticketDTO.getStatus() != null) {
                 ticket.setStatus(ticketDTO.getStatus());
                 if (ticketDTO.getStatus() == TicketStatus.RESOLVED) {

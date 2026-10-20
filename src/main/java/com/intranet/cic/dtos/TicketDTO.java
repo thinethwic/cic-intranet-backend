@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,9 @@ public class TicketDTO {
 
     @NotNull(message = "Status is required")
     private TicketStatus status;
+
+    @NotNull(message = "Reported Date is required")
+    private LocalDate reportedAt;
 
     private Segment segment;
 
